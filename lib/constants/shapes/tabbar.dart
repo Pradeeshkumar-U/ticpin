@@ -2,8 +2,10 @@ import 'dart:ui';
 
 import 'package:buttons_tabbar/buttons_tabbar.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:ticpin/constants/colors.dart';
 import 'package:ticpin/constants/size.dart';
+import 'package:ticpin/pages/searchpage.dart';
 
 class TabBarDelegate extends SliverPersistentHeaderDelegate {
   final ButtonsTabBar _tabBar;
@@ -53,13 +55,33 @@ class TabBarDelegate extends SliverPersistentHeaderDelegate {
                   right: size.width * 0.05,
                   bottom: size.height * 0.02,
                 ),
-                child: Container(
-                  height: size.width * 0.12,
-                  width: size.width * 0.9,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.white10, width: 1),
-                    borderRadius: BorderRadius.circular(13.5),
+                child: GestureDetector(
+                  onTap: () => Get.to(() => UniversalSearchPage()),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: size.safeWidth * 0.05,
+                    ),
+                    height: size.width * 0.12,
+                    width: size.width * 0.9,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: Colors.white10, width: 1),
+                      borderRadius: BorderRadius.circular(13.5),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.search, color: Colors.grey.shade600),
+                        SizedBox(width: size.safeWidth * 0.03),
+                        Text(
+                          'Search anything',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontFamily: 'Regular',
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

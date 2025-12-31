@@ -6,12 +6,17 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:ticpin/constants/colors.dart';
 import 'package:ticpin/constants/models/event/eventfull.dart';
+import 'package:ticpin/constants/models/user/user.dart';
+import 'package:ticpin/constants/models/user/userservice.dart';
 import 'package:ticpin/constants/services.dart';
+import 'package:ticpin/constants/shapes/ticbutton.dart';
 import 'package:ticpin/constants/shimmer.dart';
 import 'package:ticpin/constants/size.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:ticpin/constants/temporary.dart';
+import 'package:ticpin/pages/view/concerts/bookticketpage.dart';
+import 'package:ticpin/pages/view/concerts/checkoutpage.dart';
 import 'package:ticpin/services/controllers/event_controller.dart';
 import 'package:ticpin/services/controllers/videoController.dart';
 import 'package:ticpin/services/places.dart';
@@ -22,12 +27,12 @@ class Concertpage extends StatefulWidget {
   const Concertpage({
     super.key,
     required this.eventId,
-    required this.distance,
-    required this.videoUrl,
+    // required this.distance,
+    // required this.videoUrl,
   });
   final String eventId;
-  final double distance;
-  final String videoUrl;
+  // final double distance;
+  // final String videoUrl;
 
   @override
   State<Concertpage> createState() => _ConcertpageState();
@@ -39,6 +44,7 @@ class _ConcertpageState extends State<Concertpage>
 
   final ScrollController _scrollController = ScrollController();
   late TabController _tabController;
+  final UserService _userService = UserService();
   final GlobalKey section1Key = GlobalKey();
   final GlobalKey section2Key = GlobalKey();
   final GlobalKey section3Key = GlobalKey();
@@ -46,6 +52,19 @@ class _ConcertpageState extends State<Concertpage>
 
   double _opacity = 0.0;
   int _carouselCurrent = 0;
+  bool isInTicList = false;
+
+  Future<void> _checkTicListStatus() async {
+    final status = await _userService.isInTicList(
+      widget.eventId,
+      TicListItemType.event,
+    );
+    setState(() {
+      isInTicList = status;
+      // isLoading = false;
+    });
+  }
+
   Future<void> scrollToSection(GlobalKey key) async {
     final context = key.currentContext;
     if (context != null) {
@@ -220,14 +239,6 @@ class _ConcertpageState extends State<Concertpage>
     super.initState();
     _loadEventData();
 
-    if (widget.videoUrl != "") {
-      _videoController = VideoPlayerController.networkUrl(
-        Uri.parse(widget.videoUrl),
-      );
-
-      initVideo();
-    }
-
     _tabController = TabController(length: 4, vsync: this);
 
     _scrollController.addListener(() {
@@ -271,6 +282,14 @@ class _ConcertpageState extends State<Concertpage>
           _isLoading = false;
           _hasError = event == null;
         });
+      }
+
+      if (_event!.videoUrl != "") {
+        _videoController = VideoPlayerController.networkUrl(
+          Uri.parse(_event!.videoUrl),
+        );
+
+        initVideo();
       }
     } catch (e) {
       print('Error loading event: $e');
@@ -397,81 +416,93 @@ class _ConcertpageState extends State<Concertpage>
                   //   height: size.safeWidth * 0.07,
                   //   color: Color.lerp(whiteColor, blackColor, _opacity),
                   // ),
-                  StatefulBuilder(
-                    builder: (context, set) {
-                      glowOff() =>
-                          Future.delayed(const Duration(milliseconds: 700), () {
-                            if (context.mounted) set(() => isGlowing = false);
-                          });
+                  // StatefulBuilder(
+                  //   builder: (context, set) {
+                  //     glowOff() =>
+                  //         Future.delayed(const Duration(milliseconds: 700), () {
+                  //           if (context.mounted) set(() => isGlowing = false);
+                  //         });
 
-                      return InkWell(
-                        splashFactory: NoSplash.splashFactory,
-                        onTap: () {
-                          set(() {
-                            isSelected = !isSelected;
-                          });
-                          if (isSelected) {
-                            isGlowing = true;
-                            glowOff();
-                          }
-                        },
-                        child: Container(
-                          padding: EdgeInsets.all(wid * 0.01),
-                          decoration: BoxDecoration(
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              AnimatedOpacity(
-                                opacity: isGlowing ? 1 : 0,
-                                duration: const Duration(milliseconds: 300),
-                                child: Icon(
-                                  Icons.local_fire_department_sharp,
-                                  size: wid * 0.075 + 3,
-                                  color: Colors.orangeAccent.withOpacity(0.5),
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.orangeAccent.withOpacity(
-                                        0.8,
-                                      ),
-                                      blurRadius: 25,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              isSelected
-                                  ? ShaderMask(
-                                    shaderCallback:
-                                        (r) => const LinearGradient(
-                                          colors: [
-                                            Color(0xFFFFBF00),
-                                            Color(0xFFFF0000),
-                                          ],
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                        ).createShader(r),
-                                    child: Icon(
-                                      Icons.local_fire_department_sharp,
-                                      color: Colors.white,
-                                      size: wid * 0.075,
-                                    ),
-                                  )
-                                  : Icon(
-                                    Icons.local_fire_department_outlined,
-                                    color: Color.lerp(
-                                      whiteColor.withAlpha(230),
-                                      blackColor.withAlpha(200),
-                                      _opacity,
-                                    ),
-                                    size: wid * 0.075,
-                                  ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
+                  //     return InkWell(
+                  //       splashFactory: NoSplash.splashFactory,
+                  //       onTap: () {
+                  //         set(() {
+                  //           isSelected = !isSelected;
+                  //         });
+                  //         if (isSelected) {
+                  //           isGlowing = true;
+                  //           glowOff();
+                  //         }
+                  //       },
+                  //       child: Container(
+                  //         padding: EdgeInsets.all(wid * 0.01),
+                  //         decoration: BoxDecoration(
+                  //           color: Colors.transparent,
+                  //           borderRadius: BorderRadius.circular(15),
+                  //         ),
+                  //         child: Stack(
+                  //           alignment: Alignment.center,
+                  //           children: [
+                  //             AnimatedOpacity(
+                  //               opacity: isGlowing ? 1 : 0,
+                  //               duration: const Duration(milliseconds: 300),
+                  //               child: Icon(
+                  //                 Icons.local_fire_department_sharp,
+                  //                 size: wid * 0.075 + 3,
+                  //                 color: Colors.orangeAccent.withOpacity(0.5),
+                  //                 shadows: [
+                  //                   Shadow(
+                  //                     color: Colors.orangeAccent.withOpacity(
+                  //                       0.8,
+                  //                     ),
+                  //                     blurRadius: 25,
+                  //                   ),
+                  //                 ],
+                  //               ),
+                  //             ),
+                  //             isSelected
+                  //                 ? ShaderMask(
+                  //                   shaderCallback:
+                  //                       (r) => const LinearGradient(
+                  //                         colors: [
+                  //                           Color(0xFFFFBF00),
+                  //                           Color(0xFFFF0000),
+                  //                         ],
+                  //                         begin: Alignment.topCenter,
+                  //                         end: Alignment.bottomCenter,
+                  //                       ).createShader(r),
+                  //                   child: Icon(
+                  //                     Icons.local_fire_department_sharp,
+                  //                     color: Colors.white,
+                  //                     size: wid * 0.075,
+                  //                   ),
+                  //                 )
+                  //                 : Icon(
+                  //                   Icons.local_fire_department_outlined,
+                  //                   color: Color.lerp(
+                  //                     whiteColor.withAlpha(230),
+                  //                     blackColor.withAlpha(200),
+                  //                     _opacity,
+                  //                   ),
+                  //                   size: wid * 0.075,
+                  //                 ),
+                  //           ],
+                  //         ),
+                  //       ),
+                  //     );
+                  //   },
+                  // ),
+                  TicListButton(
+                    itemId: event.eventId,
+                    itemType: TicListItemType.event,
+                    isInTicList: isInTicList,
+                    isBackground: false,
+                    wid: size.width,
+                    color: Color.lerp(
+                      whiteColor.withAlpha(230),
+                      blackColor.withAlpha(200),
+                      _opacity,
+                    ),
                   ),
 
                   SizedBox(width: size.safeWidth * 0.02),
@@ -547,7 +578,7 @@ class _ConcertpageState extends State<Concertpage>
                     //   size.safeWidth * 0.8,
                     //   (size.safeWidth * 0.8) * (2.6 / 2),
                     // ),
-                    (widget.videoUrl != "")
+                    (event.videoUrl != "")
                         ? Column(
                           children: [
                             CarouselSlider(
@@ -794,7 +825,7 @@ class _ConcertpageState extends State<Concertpage>
                                       size.safeWidth * 0.01,
                                     ),
                                     child: Text(
-                                      '${widget.distance.toStringAsFixed(2)} kms away',
+                                      '${event.distanceKm.toStringAsFixed(2)} kms away',
                                       style: TextStyle(
                                         color: Colors.black12.withAlpha(60),
                                         fontSize: size.safeWidth * 0.025,
@@ -1604,20 +1635,30 @@ class _ConcertpageState extends State<Concertpage>
                   ),
                   Padding(
                     padding: EdgeInsets.only(right: size.safeWidth * 0.08),
-                    child: Container(
-                      width: size.safeWidth * 0.26,
-                      height: size.safeWidth * 0.08,
-                      decoration: BoxDecoration(
-                        color: blackColor,
-                        borderRadius: BorderRadius.all(Radius.circular(8)),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'Book Tickets',
-                          style: TextStyle(
-                            color: whiteColor,
-                            fontSize: size.safeWidth * 0.03,
-                            fontFamily: 'Regular',
+                    child: GestureDetector(
+                      onTap: () {
+                        Get.to(
+                          UserBookingPage(
+                            eventId: widget.eventId,
+                            eventData: event.raw,
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: size.safeWidth * 0.26,
+                        height: size.safeWidth * 0.08,
+                        decoration: BoxDecoration(
+                          color: blackColor,
+                          borderRadius: BorderRadius.all(Radius.circular(8)),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Book Tickets',
+                            style: TextStyle(
+                              color: whiteColor,
+                              fontSize: size.safeWidth * 0.03,
+                              fontFamily: 'Regular',
+                            ),
                           ),
                         ),
                       ),
@@ -1627,6 +1668,211 @@ class _ConcertpageState extends State<Concertpage>
               ),
             ),
           ),
+          // Consumer<BookingService>(
+          //           builder: (context, bookingService, child) {
+          //             final hasPendingBooking = bookingService.hasPendingBookingForEvent(widget.eventId);
+          //             final pendingBooking = bookingService.getPendingBookingForEvent(widget.eventId);
+          //             final remainingTime = bookingService.remainingTime;
+          //             final isExpired = remainingTime == null || remainingTime.isNegative;
+
+          //             return Align(
+          //               alignment: Alignment.bottomCenter,
+          //               child: Column(
+          //                 mainAxisSize: MainAxisSize.min,
+          //                 children: [
+          //                   // PENDING PAYMENT WARNING (shows above the booking bar)
+          //                   if (hasPendingBooking && pendingBooking != null && !isExpired)
+          //                     Container(
+          //                       width: size.safeWidth,
+          //                       padding: EdgeInsets.symmetric(
+          //                         horizontal: size.safeWidth * 0.05,
+          //                         vertical: size.safeWidth * 0.03,
+          //                       ),
+          //                       decoration: BoxDecoration(
+          //                         gradient: LinearGradient(
+          //                           colors: [
+          //                             Colors.orange.shade600,
+          //                             Colors.deepOrange.shade600,
+          //                           ],
+          //                         ),
+          //                         boxShadow: [
+          //                           BoxShadow(
+          //                             color: Colors.orange.withOpacity(0.3),
+          //                             blurRadius: 8,
+          //                             offset: Offset(0, -2),
+          //                           ),
+          //                         ],
+          //                       ),
+          //                       child: Row(
+          //                         children: [
+          //                           Icon(
+          //                             Icons.pending_outlined,
+          //                             color: Colors.white,
+          //                             size: size.safeWidth * 0.06,
+          //                           ),
+          //                           SizedBox(width: size.safeWidth * 0.03),
+          //                           Expanded(
+          //                             child: Column(
+          //                               crossAxisAlignment: CrossAxisAlignment.start,
+          //                               mainAxisSize: MainAxisSize.min,
+          //                               children: [
+          //                                 Text(
+          //                                   'Pending Payment',
+          //                                   style: TextStyle(
+          //                                     color: Colors.white,
+          //                                     fontSize: size.safeWidth * 0.035,
+          //                                     fontWeight: FontWeight.bold,
+          //                                     fontFamily: 'Medium',
+          //                                   ),
+          //                                 ),
+          //                                 Text(
+          //                                   'Complete within ${bookingService.formatDuration(remainingTime)}',
+          //                                   style: TextStyle(
+          //                                     color: Colors.white.withOpacity(0.9),
+          //                                     fontSize: size.safeWidth * 0.03,
+          //                                     fontFamily: 'Regular',
+          //                                   ),
+          //                                 ),
+          //                               ],
+          //                             ),
+          //                           ),
+          //                           Icon(
+          //                             Icons.timer,
+          //                             color: Colors.white,
+          //                             size: size.safeWidth * 0.05,
+          //                           ),
+          //                         ],
+          //                       ),
+          //                     ),
+
+          //                   // MAIN BOOKING BAR
+          //                   Container(
+          //                     height: size.height * 0.1,
+          //                     width: size.safeWidth,
+          //                     decoration: BoxDecoration(
+          //                       color: whiteColor,
+          //                       border: Border(
+          //                         top: BorderSide(color: blackColor),
+          //                       ),
+          //                     ),
+          //                     child: Row(
+          //                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          //                       children: [
+          //                         Padding(
+          //                           padding: EdgeInsets.only(left: size.safeWidth * 0.08),
+          //                           child: Column(
+          //                             mainAxisAlignment: MainAxisAlignment.center,
+          //                             crossAxisAlignment: CrossAxisAlignment.start,
+          //                             children: [
+          //                               Text(
+          //                                 hasPendingBooking && !isExpired
+          //                                     ? ' Time Left'
+          //                                     : ' Starts from',
+          //                                 style: TextStyle(
+          //                                   color: Colors.black,
+          //                                   fontSize: size.safeWidth * 0.03,
+          //                                   fontFamily: 'Regular',
+          //                                 ),
+          //                               ),
+          //                               Text(
+          //                                 hasPendingBooking && !isExpired
+          //                                     ? ' ${bookingService.formatDuration(remainingTime)}'
+          //                                     : ' Rupees',
+          //                                 style: TextStyle(
+          //                                   color: hasPendingBooking && !isExpired
+          //                                       ? Colors.orange.shade700
+          //                                       : Colors.black,
+          //                                   fontSize: size.safeWidth * 0.035,
+          //                                   fontFamily: 'Medium',
+          //                                   fontWeight: hasPendingBooking && !isExpired
+          //                                       ? FontWeight.bold
+          //                                       : FontWeight.normal,
+          //                                 ),
+          //                               ),
+          //                             ],
+          //                           ),
+          //                         ),
+          //                         Padding(
+          //                           padding: EdgeInsets.only(right: size.safeWidth * 0.08),
+          //                           child: GestureDetector(
+          //                             onTap: hasPendingBooking && !isExpired
+          //                                 ? () {
+          //                                     // Navigate to checkout to complete payment
+          //                                     Get.to(
+          //                                       EventCheckoutPage(
+          //                                         eventId: widget.eventId,
+          //                                         eventData: event.raw,
+          //                                         selectedTickets: List<Map<String, dynamic>>.from(
+          //                                           pendingBooking['tickets'] ?? []
+          //                                         ),
+          //                                         totalAmount: pendingBooking['totalAmount'] ?? 0,
+          //                                       ),
+          //                                     );
+          //                                   }
+          //                                 : () {
+          //                                     // Normal booking flow
+          //                                     Get.to(
+          //                                       UserBookingPage(
+          //                                         eventId: widget.eventId,
+          //                                         eventData: event.raw,
+          //                                       ),
+          //                                     );
+          //                                   },
+          //                             child: Container(
+          //                               width: size.safeWidth * 0.26,
+          //                               height: size.safeWidth * 0.08,
+          //                               decoration: BoxDecoration(
+          //                                 gradient: hasPendingBooking && !isExpired
+          //                                     ? LinearGradient(
+          //                                         colors: [
+          //                                           Colors.orange.shade600,
+          //                                           Colors.deepOrange.shade600,
+          //                                         ],
+          //                                       )
+          //                                     : null,
+          //                                 color: hasPendingBooking && !isExpired
+          //                                     ? null
+          //                                     : blackColor,
+          //                                 borderRadius: BorderRadius.all(
+          //                                   Radius.circular(8),
+          //                                 ),
+          //                               ),
+          //                               child: Center(
+          //                                 child: Row(
+          //                                   mainAxisAlignment: MainAxisAlignment.center,
+          //                                   children: [
+          //                                     if (hasPendingBooking && !isExpired)
+          //                                       Icon(
+          //                                         Icons.payment,
+          //                                         color: whiteColor,
+          //                                         size: size.safeWidth * 0.04,
+          //                                       ),
+          //                                     if (hasPendingBooking && !isExpired)
+          //                                       SizedBox(width: 4),
+          //                                     Text(
+          //                                       hasPendingBooking && !isExpired
+          //                                           ? 'Pay Now'
+          //                                           : 'Book Tickets',
+          //                                       style: TextStyle(
+          //                                         color: whiteColor,
+          //                                         fontSize: size.safeWidth * 0.03,
+          //                                         fontFamily: 'Regular',
+          //                                       ),
+          //                                     ),
+          //                                   ],
+          //                                 ),
+          //                               ),
+          //                             ),
+          //                           ),
+          //                         ),
+          //                       ],
+          //                     ),
+          //                   ),
+          //                 ],
+          //               ),
+          //             );
+          //           },
+          //         ),
         ],
       ),
     );

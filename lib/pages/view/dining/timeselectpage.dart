@@ -80,6 +80,7 @@ class _SelectTimingpageState extends State<SelectTimingpage> {
                       Spacer(),
                       DropdownButton<int>(
                         underline: SizedBox(),
+                        menuMaxHeight: size.safeHeight * 0.5,
                         borderRadius: BorderRadius.circular(10),
                         dropdownColor: whiteColor,
                         alignment: Alignment.center,

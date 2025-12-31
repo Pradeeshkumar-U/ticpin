@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -8,7 +9,10 @@ import 'package:ticpin/constants/size.dart';
 import 'package:ticpin/constants/styles.dart';
 import 'package:ticpin/constants/temporary.dart';
 import 'package:ticpin/pages/view/artists/artistspage.dart';
+import 'package:ticpin/pages/view/dining/restaurentpage.dart';
+import 'package:ticpin/services/controllers/dining_controller.dart';
 import 'package:ticpin/services/controllers/event_controller.dart';
+import 'package:ticpin/services/controllers/turf_controller.dart';
 
 // class ForYoupage extends StatefulWidget {
 //   const ForYoupage({super.key});
@@ -377,12 +381,13 @@ class ForYoupage extends StatefulWidget {
 
 class _ForYoupageState extends State<ForYoupage> {
   late final EventController ctrl;
+  late final TurfController turfCtrl;
+  late final DiningController diningController;
 
   int _eventCurrent = 0;
-  int _upcomingCurrent = 0;
+  int _turfCurrent = 0;
   final CarouselSliderController _eventController = CarouselSliderController();
-  final CarouselSliderController _upcomingController =
-      CarouselSliderController();
+  final CarouselSliderController _turfController = CarouselSliderController();
 
   Sizes size = Sizes();
 
@@ -392,8 +397,12 @@ class _ForYoupageState extends State<ForYoupage> {
     // Initialize or get existing controller
     try {
       ctrl = Get.find<EventController>();
+      turfCtrl = Get.find<TurfController>();
+      diningController = Get.find<DiningController>();
     } catch (e) {
       ctrl = Get.put(EventController());
+      turfCtrl = Get.put(TurfController());
+      diningController = Get.put(DiningController());
     }
   }
 
@@ -624,86 +633,353 @@ class _ForYoupageState extends State<ForYoupage> {
               ),
             ),
             SizedBox(height: size.safeHeight * 0.03),
-
             Padding(
-              padding: EdgeInsets.only(bottom: size.safeWidth * 0.06),
-              child: Text('OFFERS FOR YOU', style: mainTitleTextStyle),
+              padding: EdgeInsets.only(
+                top: size.safeWidth * 0.04,
+                bottom: size.safeWidth * 0.05,
+              ),
+              child: Text('IN LIMELIGHT', style: mainTitleTextStyle),
             ),
+
+            // Nearest Dinings Carousel
             SizedBox(
-              height: size.safeHeight * 0.3,
+              // height: (Sizes().width * 0.73),
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.only(left: size.safeWidth * 0.05),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: offersColorSlider,
-                      ),
-                    ),
-                  ],
+                  children:
+                      diningController.nearestSummaries.asMap().entries.map((
+                        entry,
+                      ) {
+                        final index = entry.key;
+                        final dining = entry.value;
+
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            left: size.safeWidth * 0.05,
+                            right:
+                                index ==
+                                        diningController
+                                                .nearestSummaries
+                                                .length -
+                                            1
+                                    ? size.safeWidth * 0.05
+                                    : 0,
+                          ),
+                          child: GestureDetector(
+                            onTap: () {
+                              Get.to(() => Restaurentpage(diningId: dining.id));
+                            },
+                            child: Container(
+                              width:
+                                  diningController.nearestSummaries.length == 1
+                                      ? size.safeWidth * 0.9
+                                      : size.safeWidth * 0.8,
+                              // height: (size.safeWidth * 0.9),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(15),
+                                border: Border.all(color: Colors.black12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.vertical(
+                                      top: Radius.circular(15),
+                                    ),
+                                    child: CachedNetworkImage(
+                                      imageUrl: dining.carouselImage,
+                                      width:
+                                          diningController
+                                                      .nearestSummaries
+                                                      .length ==
+                                                  1
+                                              ? size.safeWidth * 0.9
+                                              : size.safeWidth * 0.8,
+                                      height:
+                                          (diningController
+                                                      .nearestSummaries
+                                                      .length ==
+                                                  1
+                                              ? size.safeWidth * 0.9
+                                              : size.safeWidth * 0.8) *
+                                          (2.0 / 3.0),
+                                      fit: BoxFit.cover,
+                                      placeholder:
+                                          (context, url) => Container(
+                                            color: Colors.grey[300],
+                                            child: const Center(
+                                              child:
+                                                  CircularProgressIndicator(),
+                                            ),
+                                          ),
+                                      errorWidget:
+                                          (context, url, error) => Container(
+                                            color: gradient1.withAlpha(80),
+                                            child: const Icon(
+                                              Icons.restaurant,
+                                              size: 50,
+                                            ),
+                                          ),
+                                    ),
+                                  ),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: Sizes().width * 0.03,
+                                            vertical: Sizes().width * 0.015,
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                dining.name,
+                                                style: TextStyle(
+                                                  fontSize:
+                                                      Sizes().width * 0.04,
+                                                  fontFamily: 'Medium',
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              SizedBox(height: 4),
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.star,
+                                                    color: Colors.amber,
+                                                    size: Sizes().width * 0.035,
+                                                  ),
+                                                  SizedBox(width: 4),
+                                                  Text(
+                                                    '${dining.rating.toStringAsFixed(1)} (${dining.totalReviews})',
+                                                    style: TextStyle(
+                                                      fontSize:
+                                                          Sizes().width * 0.03,
+                                                      fontFamily: 'Regular',
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 10),
+                                                  Text(
+                                                    dining.formattedDistance,
+                                                    style: TextStyle(
+                                                      fontSize:
+                                                          Sizes().width * 0.03,
+                                                      fontFamily: 'Regular',
+                                                      color: Colors.black54,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              if (dining.cuisines != null &&
+                                                  dining.cuisines!.isNotEmpty)
+                                                Padding(
+                                                  padding: EdgeInsets.only(
+                                                    top: 4,
+                                                  ),
+                                                  child: Text(
+                                                    dining.cuisines!
+                                                        .take(3)
+                                                        .join(' • '),
+                                                    style: TextStyle(
+                                                      fontSize:
+                                                          Sizes().width * 0.028,
+                                                      fontFamily: 'Regular',
+                                                      color: Colors.black54,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
                 ),
               ),
             ),
+
+            // Padding(
+            //   padding: EdgeInsets.only(bottom: size.safeWidth * 0.06),
+            //   child: Text('OFFERS FOR YOU', style: mainTitleTextStyle),
+            // ),
+            // SizedBox(
+            //   height: size.safeHeight * 0.3,
+            //   child: SingleChildScrollView(
+            //     scrollDirection: Axis.horizontal,
+            //     child: Row(
+            //       children: [
+            //         Padding(
+            //           padding: EdgeInsets.only(left: size.safeWidth * 0.05),
+            //           child: Row(
+            //             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            //             children: offersColorSlider,
+            //           ),
+            //         ),
+            //       ],
+            //     ),
+            //   ),
+            // ),
             Padding(
               padding: EdgeInsets.only(
                 top: size.safeWidth * 0.07,
                 bottom: size.safeWidth * 0.05,
               ),
-              child: Text('UPCOMING EVENTS', style: mainTitleTextStyle),
+              child: Text('TURFS NEAR YOU', style: mainTitleTextStyle),
             ),
-            CarouselSlider(
-              items: upcomingColorSlider,
-              carouselController: _upcomingController,
-              options: CarouselOptions(
-                autoPlay: true,
-                autoPlayInterval: Duration(days: 99),
-                enlargeCenterPage: true,
-                height: size.safeHeight * 0.42,
-                viewportFraction: 0.93,
-                onPageChanged: (index, reason) {
-                  if (mounted) {
-                    setState(() {
-                      _upcomingCurrent = index;
-                    });
-                  }
+
+            Obx(() {
+              if (turfCtrl.loading.value && turfCtrl.forYouTurfs.isEmpty) {
+                return AspectRatio(
+                  aspectRatio: 3.0 / 2.0,
+                  child: LoadingShimmer(
+                    width: size.width,
+                    height: size.height,
+                    isCircle: false,
+                  ),
+                );
+              }
+
+              if (turfCtrl.forYouTurfs.isEmpty) {
+                return AspectRatio(
+                  aspectRatio: (3 / 2),
+                  child: SizedBox(
+                    child: const Center(child: Text("No turfs available")),
+                  ),
+                );
+              }
+
+              return CarouselSlider.builder(
+                carouselController: _turfController,
+                itemCount: turfCtrl.forYouTurfs.length,
+                itemBuilder: (context, index, realIndex) {
+                  final turf = turfCtrl.forYouTurfs[index];
+                  return TurfPosterCarousel(
+                    turf: turf,
+                    dist: turf.distanceKm,
+                    size: size,
+                    name: turf.name,
+                    city: turf.city,
+                    loc: turf.address,
+                    price: '₹ ${turf.halfHourPrice} / 30 min',
+                    posterUrl:
+                        turf.posterUrls.isNotEmpty ? turf.posterUrls.first : '',
+                    index: index,
+                    currentIndex: _turfCurrent,
+                  );
                 },
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.only(
-                top: size.safeWidth * 0.03,
-                bottom: size.safeWidth * 0.03,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children:
-                    upcomingColorSlider.asMap().entries.map((entry) {
-                      return Container(
-                        width:
-                            _upcomingCurrent == entry.key
-                                ? size.safeWidth * 0.03
-                                : size.safeWidth * 0.02,
-                        height: size.safeWidth * 0.02,
-                        margin: EdgeInsets.symmetric(
-                          vertical: 8.0,
-                          horizontal: 4.0,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(15.0),
-                          color: (Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? Colors.white
-                                  : Colors.black)
-                              .withAlpha(
-                                _upcomingCurrent == entry.key ? 255 : 100,
-                              ),
-                        ),
-                      );
-                    }).toList(),
-              ),
-            ),
+                options: CarouselOptions(
+                  onPageChanged: (index, reason) {
+                    setState(() => _turfCurrent = index);
+                  },
+                  enlargeCenterPage: true,
+                  enlargeFactor: 0.2,
+                  aspectRatio: 3.0 / 2.0,
+                  viewportFraction: 0.9,
+                  height: (size.safeWidth * 1.3) * (2 / 3),
+                  enableInfiniteScroll: true,
+                ),
+              );
+            }),
+
+            // CAROUSEL INDICATORS (REACTIVE ONLY COUNT)
+            Obx(() {
+              return Padding(
+                padding: EdgeInsets.only(
+                  top: size.width * 0.03,
+                  bottom: size.width * 0.03,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(turfCtrl.forYouTurfs.length, (index) {
+                    return Container(
+                      width:
+                          _turfCurrent == index
+                              ? size.width * 0.03
+                              : size.width * 0.02,
+                      height: size.width * 0.02,
+                      margin: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(15),
+                        color: (Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white
+                                : Colors.black)
+                            .withAlpha(_turfCurrent == index ? 255 : 100),
+                      ),
+                    );
+                  }),
+                ),
+              );
+            }),
+            // CarouselSlider(
+            //   items: upcomingColorSlider,
+            //   carouselController: _upcomingController,
+            //   options: CarouselOptions(
+            //     autoPlay: true,
+            //     autoPlayInterval: Duration(days: 99),
+            //     enlargeCenterPage: true,
+            //     height: size.safeHeight * 0.42,
+            //     viewportFraction: 0.93,
+            //     onPageChanged: (index, reason) {
+            //       if (mounted) {
+            //         setState(() {
+            //           _upcomingCurrent = index;
+            //         });
+            //       }
+            //     },
+            //   ),
+            // ),
+            // Padding(
+            //   padding: EdgeInsets.only(
+            //     top: size.safeWidth * 0.03,
+            //     bottom: size.safeWidth * 0.03,
+            //   ),
+            //   child: Row(
+            //     mainAxisAlignment: MainAxisAlignment.center,
+            //     children:
+            //         upcomingColorSlider.asMap().entries.map((entry) {
+            //           return Container(
+            //             width:
+            //                 _upcomingCurrent == entry.key
+            //                     ? size.safeWidth * 0.03
+            //                     : size.safeWidth * 0.02,
+            //             height: size.safeWidth * 0.02,
+            //             margin: EdgeInsets.symmetric(
+            //               vertical: 8.0,
+            //               horizontal: 4.0,
+            //             ),
+            //             decoration: BoxDecoration(
+            //               borderRadius: BorderRadius.circular(15.0),
+            //               color: (Theme.of(context).brightness ==
+            //                           Brightness.dark
+            //                       ? Colors.white
+            //                       : Colors.black)
+            //                   .withAlpha(
+            //                     _upcomingCurrent == entry.key ? 255 : 100,
+            //                   ),
+            //             ),
+            //           );
+            //         }).toList(),
+            //   ),
+            // ),
             SizedBox(height: size.safeHeight * 0.02),
           ],
         ),

@@ -1,29 +1,63 @@
 import 'package:buttons_tabbar/buttons_tabbar.dart';
+import 'package:carousel_slider/carousel_slider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:ticpin/constants/colors.dart';
+import 'package:ticpin/constants/models/turf/turffull.dart';
+import 'package:ticpin/constants/shimmer.dart';
 import 'package:ticpin/constants/size.dart';
 import 'package:ticpin/pages/view/dining/billpaypage.dart';
+import 'package:ticpin/pages/view/sports/bookingpage.dart';
 import 'package:ticpin/pages/view/sports/snacksbar.dart';
+import 'package:ticpin/services/controllers/turf_controller.dart';
+import 'package:ticpin/services/places.dart';
 
+// ignore: must_be_immutable
 class Turfpage extends StatefulWidget {
-  const Turfpage({super.key});
+  Turfpage({super.key, required this.turfId});
+
+  String turfId;
 
   @override
   State<Turfpage> createState() => _TurfpageState();
 }
 
+class IntervalSlot {
+  final String start;
+  final String end;
+
+  IntervalSlot(this.start, this.end);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is IntervalSlot &&
+          runtimeType == other.runtimeType &&
+          start == other.start &&
+          end == other.end;
+
+  @override
+  int get hashCode => start.hashCode ^ end.hashCode;
+}
+
 class _TurfpageState extends State<Turfpage> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   double _appBarOpacity = 0.0;
-  late TabController _tabController;
+
+  CarouselSliderController _turfController = CarouselSliderController();
+  int _turfCurrent = 0;
+  final TurfController controller = Get.find<TurfController>();
   List<SnackItem> snacks = [
     SnackItem(name: "Lays", det: "Red lays with more quantity", price: 20),
     SnackItem(name: "Coke", det: "Chilled soft drink", price: 100),
     SnackItem(name: "Cookies", det: "Chocolate chip cookies", price: 50),
   ];
+
+  // Update your PageView builder to use the new buildIntervalUI
 
   // NOTE: we accept the sheetSetState callback here so we can rebuild the modal.
   Widget snacksPart(
@@ -255,30 +289,15 @@ class _TurfpageState extends State<Turfpage> with TickerProviderStateMixin {
     );
   }
 
-  String name = "Name",
-      details = "Details",
-          // time = 'opens on time',
-          about_content =
-          "Content\nContent\nContent\nContent";
-  final tabs = [
-    ['11 Aug', 'Sun'],
-    ['12 Aug', 'Mon'],
-    ['13 Aug', 'Tue'],
-    ['14 Aug', 'Wed'],
-    ['15 Aug', 'Thu'],
-    ['16 Aug', 'Fri'],
-    ['17 Aug', 'Sat'],
-    ['18 Aug', 'Sun'],
-  ];
+  bool _isLoading = true;
+  bool _hasError = false;
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: tabs.length, vsync: this)
-      ..addListener(() {
-        if (mounted) {
-          setState(() {});
-        } // Update state when tab changes
-      });
+
+    _loadTurfData();
+
     _scrollController.addListener(() {
       Sizes size = Sizes();
 
@@ -301,63 +320,35 @@ class _TurfpageState extends State<Turfpage> with TickerProviderStateMixin {
     });
   }
 
-  Widget buildTabItem(int index) {
-    final isSelected = _tabController.index == index;
+  Future<void> _loadTurfData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _hasError = false;
+      });
 
-    return InkWell(
-      enableFeedback: true,
-      borderRadius: BorderRadius.circular(15),
-      onTap: () {
-        HapticFeedback.lightImpact();
-        _tabController.animateTo(index);
-      },
-      child: AnimatedContainer(
-        width: size.safeWidth * 0.19,
-        curve: Curves.bounceIn,
-        duration: Duration(seconds: 4),
-        padding: EdgeInsets.symmetric(vertical: size.safeWidth * 0.02),
-        decoration:
-            isSelected
-                ? BoxDecoration(
-                  color: Color(0xFFCFCFFA),
-                  borderRadius: BorderRadius.circular(15),
-                )
-                : null,
-        child: defaultTab(tabs[index][0], tabs[index][1], isSelected),
-      ),
-    );
+      // Load from cache or Firestore
+      final turf = await controller.loadTurfFull(widget.turfId);
+
+      if (mounted) {
+        setState(() {
+          _turf = turf;
+          _isLoading = false;
+          _hasError = turf == null;
+        });
+      }
+    } catch (e) {
+      print('Error loading event: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _hasError = true;
+        });
+      }
+    }
   }
 
-  static Tab defaultTab(String name, String details, bool isSelected) {
-    return Tab(
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              name,
-              style: TextStyle(
-                fontSize: Sizes().width * 0.031,
-                color: blackColor,
-                fontFamily: 'Medium',
-              ),
-            ),
-            Text(
-              details,
-              style: TextStyle(
-                fontSize: Sizes().width * 0.03,
-                color: blackColor,
-                fontFamily: 'Medium',
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  int tabIndex = 0;
+  TurfFull? _turf;
 
   Sizes size = Sizes();
 
@@ -369,10 +360,172 @@ class _TurfpageState extends State<Turfpage> with TickerProviderStateMixin {
     _scrollController.dispose();
     super.dispose();
   }
+
+  // OPTIMIZATION: Separate loading state widget
+  Widget _buildLoadingState() {
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      body: Container(
+        color: whiteColor,
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // SizedBox(height: 20),
+                  LoadingShimmer(
+                    width: size.safeWidth,
+                    height: size.safeHeight * 0.35,
+                    isCircle: false,
+                  ),
+                  SizedBox(height: 60),
+                  Padding(
+                    padding: EdgeInsets.only(left: size.safeWidth * 0.05),
+                    child: LoadingShimmer(
+                      width: size.safeWidth * 0.6,
+                      height: size.safeWidth * 0.1,
+                      isCircle: false,
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  Padding(
+                    padding: EdgeInsets.only(left: size.safeWidth * 0.05),
+                    child: LoadingShimmer(
+                      width: size.safeWidth * 0.7,
+                      height: size.safeWidth * 0.1,
+                      isCircle: false,
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  Padding(
+                    padding: EdgeInsets.only(left: size.safeWidth * 0.05),
+                    child: LoadingShimmer(
+                      width: size.safeWidth * 0.3,
+                      height: size.safeWidth * 0.1,
+                      isCircle: false,
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  Padding(
+                    padding: EdgeInsets.only(left: size.safeWidth * 0.05),
+                    child: LoadingShimmer(
+                      width: size.safeWidth * 0.9,
+                      height: size.safeHeight * 0.1,
+                      isCircle: false,
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  Padding(
+                    padding: EdgeInsets.only(left: size.safeWidth * 0.05),
+                    child: LoadingShimmer(
+                      width: size.safeWidth * 0.3,
+                      height: size.safeWidth * 0.1,
+                      isCircle: false,
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  Padding(
+                    padding: EdgeInsets.only(left: size.safeWidth * 0.05),
+                    child: LoadingShimmer(
+                      width: size.safeWidth * 0.9,
+                      height: size.safeHeight * 0.1,
+                      isCircle: false,
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  Padding(
+                    padding: EdgeInsets.only(left: size.safeWidth * 0.05),
+                    child: LoadingShimmer(
+                      width: size.safeWidth * 0.3,
+                      height: size.safeWidth * 0.1,
+                      isCircle: false,
+                    ),
+                  ),
+                  // SizedBox(height: 20),
+                  // Padding(
+                  //   padding: EdgeInsets.only(left: size.safeWidth * 0.05),
+                  //   child: LoadingShimmer(
+                  //     width: size.safeWidth * 0.9,
+                  //     height: size.safeHeight * 0.1,
+                  //     isCircle: false,
+                  //   ),
+                  // ),
+                  SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // OPTIMIZATION: Separate error state widget
+  Widget _buildErrorState() {
+    return Scaffold(
+      backgroundColor: whiteColor,
+      appBar: AppBar(
+        backgroundColor: gradient1,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: whiteColor),
+          onPressed: () => Get.back(),
+        ),
+        title: Text(
+          'Turf Not Found',
+          style: TextStyle(color: whiteColor, fontFamily: 'Regular'),
+        ),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              'Unable to load turf details',
+              style: TextStyle(fontSize: 18, fontFamily: 'Regular'),
+            ),
+            SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                _loadTurfData(); // Retry loading
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: blackColor,
+                padding: EdgeInsets.symmetric(
+                  horizontal: size.safeWidth * 0.1,
+                  vertical: size.safeWidth * 0.03,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                'Retry',
+                style: TextStyle(fontFamily: 'Regular', color: whiteColor),
+              ),
+            ),
+            SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
   //
   @override
   Widget build(BuildContext context) {
-  
+    if (_isLoading) {
+      return _buildLoadingState();
+    }
+
+    final turf = _turf!;
+
+    if (_hasError || _turf == null) {
+      return _buildErrorState();
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
@@ -402,20 +555,6 @@ class _TurfpageState extends State<Turfpage> with TickerProviderStateMixin {
                   actions: [
                     Row(
                       children: [
-                        // IconButton(
-                        //   onPressed: () {},
-                        //   icon: CircleAvatar(
-                        //     backgroundColor: Colors.white54,
-                        //     child: Icon(
-                        //       Icons.search,
-                        //       color: Color.lerp(
-                        //         blackColor.withAlpha(200),
-                        //         blackColor,
-                        //         _appBarOpacity,
-                        //       ),
-                        //     ),
-                        //   ),
-                        // ),
                         IconButton(
                           onPressed: () {},
                           icon: CircleAvatar(
@@ -531,12 +670,8 @@ class _TurfpageState extends State<Turfpage> with TickerProviderStateMixin {
                   surfaceTintColor: whiteColor,
                   shadowColor: Colors.transparent,
                   expandedHeight:
-                      size.safeWidth * 0.6 - MediaQuery.of(context).padding.top,
-                  backgroundColor: Color.lerp(
-                    Colors.transparent,
-                    whiteColor,
-                    _appBarOpacity,
-                  ),
+                      size.safeWidth * 0.7 + MediaQuery.of(context).padding.top,
+                  backgroundColor: whiteColor,
 
                   elevation: _appBarOpacity > 0.1 ? 4 : 0,
                   stretchTriggerOffset: 0.1,
@@ -546,7 +681,7 @@ class _TurfpageState extends State<Turfpage> with TickerProviderStateMixin {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          name,
+                          turf.name,
                           style: TextStyle(
                             fontFamily: 'Regular',
                             fontSize: size.safeWidth * 0.045,
@@ -555,7 +690,7 @@ class _TurfpageState extends State<Turfpage> with TickerProviderStateMixin {
                           ),
                         ),
                         Text(
-                          details,
+                          turf.city,
                           style: TextStyle(
                             fontFamily: 'Regular',
                             fontSize: 14,
@@ -571,48 +706,76 @@ class _TurfpageState extends State<Turfpage> with TickerProviderStateMixin {
                     whiteColor,
                     _appBarOpacity,
                   ),
+
                   flexibleSpace: FlexibleSpaceBar(
                     collapseMode: CollapseMode.pin,
-                    background: Container(
-                      // height: size.safeWidth * 0.5,
-                      // width: size.safeWidth * 0.5,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [gradient1, gradient2],
+                    background: Column(
+                      children: [
+                        CarouselSlider.builder(
+                          carouselController: _turfController,
+                          itemCount: turf.posterUrls.length,
+                          itemBuilder: (context, index, realIndex) {
+                            return SizedBox(
+                              // height:
+                              //     size.safeWidth * 0.6 +
+                              //     MediaQuery.of(context).padding.top,
+                              // -MediaQuery.of(context).padding.top,
+                              width: size.safeWidth,
+                              child: Image.network(
+                                turf.posterUrls[index],
+                                fit: BoxFit.cover,
+                              ),
+                            );
+                          },
+                          options: CarouselOptions(
+                            scrollPhysics:
+                                turf.posterUrls.length == 1
+                                    ? NeverScrollableScrollPhysics()
+                                    : AlwaysScrollableScrollPhysics(),
+                            viewportFraction: 1,
+                            height:
+                                size.safeWidth * 0.7 +
+                                MediaQuery.of(context).padding.top,
+                          ),
                         ),
-                      ), // child: Stack(
-                      //   fit: StackFit.expand,
-                      //   children: [
-                      //     if (_isPlaying)
-                      //       YoutubePlayer(controller: _controller)
-                      //     else
-                      //       Stack(
-                      //         fit: StackFit.expand,
-                      //         children: [
-                      //           // Thumbnail image
-                      //           Image.network(
-                      //             "https://img.youtube.com/vi/${getYoutubeVideoId(you_tu_url)}/hqdefault.jpg",
-                      //             fit: BoxFit.cover,
-                      //           ),
-                      //           // Custom play button
-                      //           GestureDetector(
-                      //             onTap: () {
-                      //               setState(() => _isPlaying = true);
-                      //               _controller.loadVideoById(
-                      //                 videoId: videoId,
-                      //                 startSeconds: 0,
-                      //               );
-                      //             },
-                      //             child: Icon(
-                      //               Icons.play_circle_fill,
-                      //               size: 60,
-                      //               color: Colors.white70,
-                      //             ),
-                      //           ),
-                      //         ],
-                      //       ),
-                      //   ],
-                      // ),
+                        turf.posterUrls.length == 1
+                            ? SizedBox.shrink()
+                            : Padding(
+                              padding: EdgeInsets.only(
+                                top: size.width * 0.01,
+                                bottom: size.width * 0.01,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: List.generate(
+                                  turf.posterUrls.length,
+                                  (index) {
+                                    return Container(
+                                      width:
+                                          _turfCurrent == index
+                                              ? size.width * 0.03
+                                              : size.width * 0.02,
+                                      height: size.width * 0.02,
+                                      margin: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                        horizontal: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(15),
+                                        color: (Theme.of(context).brightness ==
+                                                    Brightness.dark
+                                                ? Colors.white
+                                                : Colors.black)
+                                            .withAlpha(
+                                              _turfCurrent == index ? 255 : 100,
+                                            ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                      ],
                     ),
                   ),
                 ),
@@ -621,13 +784,13 @@ class _TurfpageState extends State<Turfpage> with TickerProviderStateMixin {
                     opacity: 1 - _appBarOpacity,
                     duration: Duration(milliseconds: 300),
                     child: Container(
-                      padding: EdgeInsets.only(left: 20, top: 10),
+                      padding: EdgeInsets.only(left: 20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          SizedBox(height: size.safeWidth * 0.05),
+                          // SizedBox(height: size.safeWidth * 0.05),
                           Text(
-                            name,
+                            turf.name,
                             style: TextStyle(
                               fontFamily: 'Regular',
 
@@ -642,7 +805,7 @@ class _TurfpageState extends State<Turfpage> with TickerProviderStateMixin {
                               Column(
                                 children: [
                                   Text(
-                                    details,
+                                    turf.city,
                                     style: TextStyle(
                                       fontFamily: 'Regular',
 
@@ -693,49 +856,190 @@ class _TurfpageState extends State<Turfpage> with TickerProviderStateMixin {
                   ),
                 ),
 
-                /// 🔻 Sticky Tab Row
-                // SliverPersistentHeader(
-                //   pinned: true,
-                //   delegate: _StickyTabBarDelegate(
-                //     child: Container(
-                //       color: Colors.white,
-                //       padding: EdgeInsets.symmetric(vertical: 10),
-                //       child: Container(
-                //         decoration: BoxDecoration(
-                //           borderRadius: BorderRadius.circular(15),
-                //         ),
-                //         child: TabBar(
-                //           controller: _tabController,
-                //           dividerHeight: 0,
-                //           // padding: EdgeInsets.all(size.safeWidth * 0.02),
-                //           // tabs: [
-                //           //   concertElevatedButton('About', section1Key),
-                //           //   concertElevatedButton('Artist', section2Key),
-                //           //   concertElevatedButton('Gallery', section3Key),
-                //           //   concertElevatedButton('Venue', section4Key),
-                //           // ]
-                //           onTap: (value) {},
-                //           indicator: BoxDecoration(),
-                //           tabs: List.generate(
-                //             tabs.length,
-                //             (index) => Center(
-                //               child: concertElevatedButton(
-                //                 tabs[index][0],
-                //                 tabs[index][1],
-                //                 index,
-                //               ),
-                //             ),
-                //           ),
-                //         ),
-                //       ),
-                //     ),
-                //   ),
-                // ),
                 SliverToBoxAdapter(
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       SizedBox(height: 15),
+                      Row(
+                        children: [
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 20),
+                            child: Text(
+                              "Address",
+
+                              style: TextStyle(
+                                fontFamily: 'Regular',
+                                fontSize: size.safeWidth * 0.04,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 10,
+                              ),
+                              child: Text(
+                                turf.address,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 5,
+                                style: TextStyle(
+                                  fontFamily: 'Regular',
+                                  fontSize: size.safeWidth * 0.035,
+
+                                  // fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 20),
+                            child: GestureDetector(
+                              onTap: () {
+                                openMapLink(turf.mapLink);
+                              },
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: size.safeWidth * 0.03,
+                                  vertical: size.safeWidth * 0.015,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: blackColor,
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(8),
+                                  ),
+                                ),
+
+                                child: Text(
+                                  'get directions >',
+                                  style: TextStyle(
+                                    color: whiteColor,
+                                    fontSize: size.safeWidth * 0.025,
+                                    fontFamily: 'Regular',
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 15),
+                      Row(
+                        children: [
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 20),
+                            child: Text(
+                              "Venue Information",
+
+                              style: TextStyle(
+                                fontFamily: 'Regular',
+                                fontSize: size.safeWidth * 0.04,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                        child: SizedBox(
+                          width: size.width,
+                          child: Wrap(
+                            // alignment: WrapAlignment.start,
+                            // crossAxisAlignment: WrapCrossAlignment.start,
+                            // runAlignment: WrapAlignment.start,
+                            spacing: 10,
+                            runSpacing: 8,
+                            children:
+                                turf.venueInfo.map((amenity) {
+                                  return Chip(
+                                    label: Text(
+                                      amenity,
+                                      style: const TextStyle(
+                                        fontFamily: 'Medium',
+                                      ),
+                                    ),
+                                    backgroundColor: const Color.fromARGB(
+                                      255,
+                                      193,
+                                      173,
+                                      255,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  );
+                                }).toList(),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 20),
+                            child: Text(
+                              "Playground Types",
+
+                              style: TextStyle(
+                                fontFamily: 'Regular',
+                                fontSize: size.safeWidth * 0.04,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                        child: SizedBox(
+                          width: size.width,
+                          child: Wrap(
+                            // alignment: WrapAlignment.start,
+                            // crossAxisAlignment: WrapCrossAlignment.start,
+                            // runAlignment: WrapAlignment.start,
+                            spacing: 10,
+                            runSpacing: 8,
+                            children:
+                                turf.playground.map((amenity) {
+                                  return Chip(
+                                    label: Text(
+                                      amenity,
+                                      style: const TextStyle(
+                                        fontFamily: 'Medium',
+                                      ),
+                                    ),
+                                    backgroundColor: const Color.fromARGB(
+                                      255,
+                                      193,
+                                      173,
+                                      255,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  );
+                                }).toList(),
+                          ),
+                        ),
+                      ),
                       Row(
                         children: [
                           Padding(
@@ -745,188 +1049,195 @@ class _TurfpageState extends State<Turfpage> with TickerProviderStateMixin {
 
                               style: TextStyle(
                                 fontFamily: 'Regular',
-                                fontSize: size.safeWidth * 0.045,
+                                fontSize: size.safeWidth * 0.04,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
                         ],
                       ),
-                      // SizedBox(height: size.safeWidth * 0.05),
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8.0),
-                        child: GridView.builder(
-                          physics: NeverScrollableScrollPhysics(),
-                          itemCount: 7,
-                          shrinkWrap: true,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                // mainAxisSpacing: 10,
-                                // crossAxisSpacing: 10,
-                                childAspectRatio: (1 / 0.4),
-                              ),
-                          itemBuilder: (context, index) {
-                            return Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Container(
-                                height: size.safeHeight * 0.05,
-
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  color: Color.fromARGB(255, 193, 173, 255),
-                                ),
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Text(
-                                    'First-aid',
-                                    style: TextStyle(
-                                      fontFamily: 'Medium',
-                                      // fontSize: size.safeWidth * 0.025,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
                         ),
-                      ),
-                      // SizedBox(height: size.safeWidth * 0.07),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 20),
-                        child: Text(
-                          "Select Day and Time",
-
-                          style: TextStyle(
-                            fontFamily: 'Regular',
-                            fontSize: size.safeWidth * 0.045,
-                            fontWeight: FontWeight.bold,
+                        child: SizedBox(
+                          width: size.width,
+                          child: Wrap(
+                            // alignment: WrapAlignment.start,
+                            // crossAxisAlignment: WrapCrossAlignment.start,
+                            // runAlignment: WrapAlignment.start,
+                            spacing: 10,
+                            runSpacing: 8,
+                            children:
+                                turf.amenities.map((amenity) {
+                                  return Chip(
+                                    label: Text(
+                                      amenity,
+                                      style: const TextStyle(
+                                        fontFamily: 'Medium',
+                                      ),
+                                    ),
+                                    backgroundColor: const Color.fromARGB(
+                                      255,
+                                      193,
+                                      173,
+                                      255,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  );
+                                }).toList(),
                           ),
                         ),
                       ),
-                      SizedBox(height: size.safeWidth * 0.05),
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            SizedBox(width: size.safeWidth * 0.01),
-                            SizedBox(
-                              // height: size.safeWidth * 0.2,
-                              child: ButtonsTabBar(
-                                controller: _tabController,
-                                unselectedBackgroundColor: Colors.black12,
-                                unselectedBorderColor: Colors.transparent,
 
-                                backgroundColor: Color.fromARGB(
-                                  255,
-                                  193,
-                                  173,
-                                  255,
-                                ),
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: size.safeWidth * 0.01,
-                                ),
-                                contentCenter: true,
-                                borderColor: Colors.black,
-                                borderWidth: 1,
+                      Row(
+                        children: [
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 20),
+                            child: Text(
+                              "Venue Rules",
 
-                                onTap: (index) {
-                                  setState(() {
-                                    tabIndex = _tabController.index;
-                                  });
-                                },
-
-                                width: size.safeWidth * 0.2,
-                                radius: 15,
-                                height: size.safeWidth * 0.17,
-
-                                // physics: NeverScrollableScrollPhysics(),
-                                buttonMargin: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 0,
-                                ),
-                                splashColor: Colors.transparent,
-                                duration: 0,
-
-                                tabs: List.generate(tabs.length, (index) {
-                                  return Tab(
-                                    child: Padding(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 4.0,
-                                      ),
-                                      child: defaultTab(
-                                        tabs[index][0],
-                                        tabs[index][1],
-                                        _tabController.index == index,
-                                      ),
-                                    ),
-                                  );
-                                }),
+                              style: TextStyle(
+                                fontFamily: 'Regular',
+                                fontSize: size.safeWidth * 0.04,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                            SizedBox(width: size.safeWidth * 0.01),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8.0),
-                        child: GridView.builder(
-                          physics: NeverScrollableScrollPhysics(),
-                          itemCount: 7,
-                          shrinkWrap: true,
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                // mainAxisSpacing: 10,
-                                // crossAxisSpacing: 10,
-                                childAspectRatio: (1 / 0.6),
-                              ),
-                          itemBuilder: (context, index) {
-                            return Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Container(
-                                height: size.safeHeight * 0.1,
-
-                                decoration: BoxDecoration(
-                                  border: Border.all(
-                                    width: 1,
-                                    color: Colors.black45,
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                  color: Colors.black12,
-                                ),
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Column(
-                                    children: [
-                                      Padding(
-                                        padding: EdgeInsets.only(top: 8.0),
-                                        child: Text(
-                                          '11:22 AM',
-                                          style: TextStyle(
-                                            fontFamily: 'Medium',
-                                          ),
-                                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                        child: SizedBox(
+                          width: size.width,
+                          child: Wrap(
+                            // alignment: WrapAlignment.start,
+                            // crossAxisAlignment: WrapCrossAlignment.start,
+                            // runAlignment: WrapAlignment.start,
+                            spacing: 10,
+                            runSpacing: 8,
+                            children:
+                                turf.venueRules.map((amenity) {
+                                  return Chip(
+                                    label: Text(
+                                      amenity,
+                                      style: const TextStyle(
+                                        fontFamily: 'Medium',
                                       ),
-                                      Padding(
-                                        padding: EdgeInsets.only(bottom: 8.0),
-                                        child: Text(
-                                          '02:00 PM',
-                                          style: TextStyle(
-                                            fontFamily: 'Medium',
-                                            // fontSize: size.safeWidth * 0.025,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
+                                    ),
+                                    backgroundColor: const Color.fromARGB(
+                                      255,
+                                      193,
+                                      173,
+                                      255,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  );
+                                }).toList(),
+                          ),
                         ),
                       ),
-                      SizedBox(height: size.safeHeight * 0.15),
+
+                      SizedBox(height: size.safeHeight * 0.3),
+
+                      // Padding(
+                      //   padding: EdgeInsets.symmetric(horizontal: 8.0),
+                      //   child: GridView.builder(
+                      //     physics: NeverScrollableScrollPhysics(),
+                      //     itemCount: 7,
+                      //     shrinkWrap: true,
+                      //     gridDelegate:
+                      //         SliverGridDelegateWithFixedCrossAxisCount(
+                      //           crossAxisCount: 3,
+                      //           // mainAxisSpacing: 10,
+                      //           // crossAxisSpacing: 10,
+                      //           childAspectRatio: (1 / 0.6),
+                      //         ),
+                      //     itemBuilder: (context, index) {
+                      //       return Padding(
+                      //         padding: const EdgeInsets.all(8.0),
+                      //         child: Container(
+                      //           height: size.safeHeight * 0.1,
+
+                      //           decoration: BoxDecoration(
+                      //             border: Border.all(
+                      //               width: 1,
+                      //               color: Colors.black45,
+                      //             ),
+                      //             borderRadius: BorderRadius.circular(12),
+                      //             color: Colors.black12,
+                      //           ),
+                      //           child: FittedBox(
+                      //             fit: BoxFit.scaleDown,
+                      //             child: Column(
+                      //               children: [
+                      //                 Padding(
+                      //                   padding: EdgeInsets.only(top: 8.0),
+                      //                   child: Text(
+                      //                     '11:22 AM',
+                      //                     style: TextStyle(
+                      //                       fontFamily: 'Medium',
+                      //                     ),
+                      //                   ),
+                      //                 ),
+                      //                 Padding(
+                      //                   padding: EdgeInsets.only(bottom: 8.0),
+                      //                   child: Text(
+                      //                     '02:00 PM',
+                      //                     style: TextStyle(
+                      //                       fontFamily: 'Medium',
+                      //                       // fontSize: size.safeWidth * 0.025,
+                      //                     ),
+                      //                   ),
+                      //                 ),
+                      //               ],
+                      //             ),
+                      //           ),
+                      //         ),
+                      //       );
+                      //     },
+                      //   ),
+                      // ),
+                      // SizedBox(height: size.safeHeight * 0.15),
+
+                      // // PAGE VIEW FOR SLOTS
+                      // SizedBox(
+                      //   height: 400, // FIXED HEIGHT → NO ERRORS
+                      //   child: PageView.builder(
+                      //     controller: _pageController,
+                      //     itemCount: sessions.length,
+                      //     onPageChanged:
+                      //         (i) => setState(() => _selectedIndex = i),
+                      //     itemBuilder: (context, index) {
+                      //       final session = sessions[index];
+                      //       final slots = allTimes[index];
+
+                      //       int half = (slots.length / 2).ceil();
+                      //       final firstHalf = slots.sublist(0, half);
+                      //       final secondHalf = slots.sublist(half - 1);
+
+                      //       return Column(
+                      //         children: [
+                      //           buildIntervalUI(session, firstHalf),
+                      //           SizedBox(height: 10),
+                      //           buildIntervalUI(session, secondHalf),
+                      //         ],
+                      //       );
+                      //     },
+                      //   ),
+                      // ),
+
+                      // SizedBox(height: 10),
+
+                      // PAGE INDICATOR
                     ],
                   ),
                 ),
@@ -939,68 +1250,45 @@ class _TurfpageState extends State<Turfpage> with TickerProviderStateMixin {
             bottom: 0,
             child: Container(
               width: size.safeWidth,
-              padding: EdgeInsets.only(top: 10, bottom: 18),
+              padding: EdgeInsets.only(
+                top: 10,
+                bottom: 18,
+                left: 20,
+                right: 20,
+              ),
               color: Colors.white,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  InkWell(
-                    onTap: () {
-                      snackspage();
-                    },
-                    child: Container(
-                      width: size.safeWidth * 0.45,
-                      height: size.safeWidth * 0.12,
-                      // margin: EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-                      padding: EdgeInsets.symmetric(
-                        // horizontal: 15,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withAlpha(60),
-                        borderRadius: BorderRadius.circular(13),
-                      ),
-                      child: Center(
-                        child: Text(
-                          "Proceed to Pay",
-                          style: TextStyle(
-                            fontFamily: 'Regular',
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black,
-                          ),
-                        ),
+              child: InkWell(
+                onTap: () {
+                  Get.to(
+                    SportsBookingPage(
+                      turfId: widget.turfId,
+                      turfData: turf.raw,
+                    ),
+                  );
+                },
+                child: Container(
+                  width: size.safeWidth * 0.45,
+                  height: size.safeWidth * 0.12,
+                  // margin: EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                  padding: EdgeInsets.symmetric(
+                    // horizontal: 15,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Center(
+                    child: Text(
+                      "Book Now",
+                      style: TextStyle(
+                        fontFamily: 'Regular',
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
                     ),
                   ),
-                  InkWell(
-                    onTap: () {
-                      Get.to(DiningBillpage());
-                    },
-                    child: Container(
-                      width: size.safeWidth * 0.45,
-                      height: size.safeWidth * 0.12,
-                      // margin: EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-                      padding: EdgeInsets.symmetric(
-                        // horizontal: 15,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.circular(13),
-                      ),
-                      child: Center(
-                        child: Text(
-                          "Rs. 10000",
-                          style: TextStyle(
-                            fontFamily: 'Regular',
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),

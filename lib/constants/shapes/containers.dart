@@ -58,8 +58,6 @@ class _eventContainerState extends State<eventContainer> {
     await Get.to(
       () => Concertpage(
         eventId: widget.name,
-        distance: 0.0,
-        videoUrl: "",
         // concertId: widget.name,
         // concertName: widget.name,
         // concertDate: widget.date,
@@ -395,7 +393,7 @@ class diningContainer extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(right: Sizes().width * 0.045),
       child: GestureDetector(
-        onTap: () => Get.to(Restaurentpage()),
+        onTap: () => Get.to(Restaurentpage(diningId: '', )),
         child: Container(
           width: Sizes().width * 0.7,
           // height: Sizes().height * 0.2,
@@ -485,7 +483,7 @@ class sportsContainer extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(right: Sizes().width * 0.045),
       child: GestureDetector(
-        onTap: () => Get.to(Turfpage()),
+        onTap: () => Get.to(Turfpage(turfId: "",)),
         child: Container(
           width: Sizes().width * 0.9,
           // height: Sizes().height * 0.2,

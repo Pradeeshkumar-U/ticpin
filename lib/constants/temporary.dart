@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:ticpin/constants/colors.dart';
 import 'package:ticpin/constants/models/event/eventsummary.dart';
+import 'package:ticpin/constants/models/turf/turfsummary.dart';
 import 'package:ticpin/constants/shapes/containers.dart';
 import 'package:ticpin/constants/shimmer.dart';
 import 'package:ticpin/constants/size.dart';
 import 'package:ticpin/pages/view/concerts/concertpage.dart';
+import 'package:ticpin/pages/view/sports/turfpage.dart';
 import 'package:ticpin/services/controllers/event_controller.dart';
 import 'package:ticpin/services/controllers/videoController.dart';
 import 'package:video_player/video_player.dart';
@@ -18,6 +21,208 @@ class Temp {
   static final eventDate = 'Sat, 08 Nov, 7 PM';
   static final eventName = 'Event Name';
   static final eventLoc = 'Event Location';
+}
+
+class TurfPosterCarousel extends StatefulWidget {
+  final TurfSummary turf;
+  final double dist;
+  final Sizes size;
+  final String name;
+  final String city;
+  final String loc;
+  final String price;
+  final String posterUrl;
+  final int index;
+  final int currentIndex;
+
+  const TurfPosterCarousel({
+    super.key,
+    required this.turf,
+    required this.dist,
+    required this.size,
+    required this.name,
+    required this.city,
+    required this.loc,
+    required this.price,
+    required this.posterUrl,
+    required this.index,
+    required this.currentIndex,
+  });
+
+  @override
+  State<TurfPosterCarousel> createState() => _TurfPosterCarouselState();
+}
+
+class _TurfPosterCarouselState extends State<TurfPosterCarousel> {
+  @override
+  Widget build(BuildContext context) {
+    double aspectratio = 3.0 / 2.0;
+    double height = widget.size.width / aspectratio;
+    double width = height * aspectratio;
+    return GestureDetector(
+      onTap: () {
+        Get.to(
+          () => Turfpage(
+            turfId: widget.turf.id,
+            // distance: widget.event.distanceKm,
+
+            // videoUrl: widget.videoUrl!,
+            // videoUrl: "",
+          ),
+        );
+
+        // Navigate to turf detail page
+        // Get.to(() => TurfDetailPage(turfId: turf.id));
+      },
+      child: SizedBox(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+                child: Container(
+                  width: width,
+                  height: height,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                    border: Border(
+                      top: BorderSide(color: Colors.black12, width: 1),
+                      left: BorderSide(color: Colors.black12, width: 1),
+                      right: BorderSide(color: Colors.black12, width: 1),
+                    ),
+                  ),
+                  child:
+                      widget.posterUrl.isNotEmpty
+                          ? ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(20),
+                              topRight: Radius.circular(20),
+                            ),
+
+                            child: Image.network(
+                              widget.posterUrl,
+                              // width: width,
+                              // height: height,
+                              fit: BoxFit.cover,
+                              errorBuilder:
+                                  (context, error, stack) => const Center(
+                                    child: Icon(
+                                      Icons.sports_soccer,
+                                      size: 80,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+
+                              loadingBuilder:
+                                  (context, child, loadingProgress) =>
+                                      loadingProgress == null
+                                          ? child
+                                          : LoadingShimmer(
+                                            height: height,
+                                            width: width,
+                                            isCircle: false,
+                                            radius: 0,
+                                          ),
+                            ),
+                          )
+                          : SizedBox(
+                            height: height,
+                            child: Stack(
+                              children: [
+                                LoadingShimmer(
+                                  height: height,
+                                  width: width,
+                                  isCircle: false,
+                                  radius: 0,
+                                ),
+                                Align(
+                                  alignment: Alignment.center,
+                                  child: Icon(
+                                    Icons.sports_soccer,
+                                    size: 80,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                ),
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
+                ),
+                border: Border(
+                  bottom: BorderSide(color: Colors.black12, width: 1),
+                  left: BorderSide(color: Colors.black12, width: 1),
+                  right: BorderSide(color: Colors.black12, width: 1),
+                ),
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        customTextStyle(
+                          widget.name,
+                          widget.size.safeWidth * 0.045,
+                          fondWeight: FontWeight.bold,
+                        ),
+                        customTextStyle(
+                          widget.city,
+                          widget.size.safeWidth * 0.033,
+                        ),
+
+                        customTextStyle(
+                          '${widget.price}',
+                          widget.size.safeWidth * 0.033,
+                        ),
+                      ],
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        vertical: Sizes().width * 0.02,
+                      ),
+                      child: ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: blackColor,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
+                          ),
+                        ),
+                        child: Text(
+                          'Book Now',
+                          style: TextStyle(
+                            color: whiteColor,
+                            fontFamily: 'Regular',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ignore: must_be_immutable
@@ -120,9 +325,9 @@ class _PosterCarouselState extends State<PosterCarousel> {
         Get.to(
           () => Concertpage(
             eventId: widget.event.id,
-            distance: widget.event.distanceKm,
+            // distance: widget.event.distanceKm,
 
-            videoUrl: widget.videoUrl!,
+            // videoUrl: widget.videoUrl!,
             // videoUrl: "",
           ),
         )?.then((_) {

@@ -7,6 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:ticpin/constants/colors.dart';
+import 'package:ticpin/constants/models/user/userservice.dart';
 import 'package:ticpin/constants/shimmer.dart';
 import 'package:ticpin/constants/size.dart';
 import 'package:ticpin/constants/shapes/tabbar.dart';
@@ -16,6 +17,7 @@ import 'package:ticpin/pages/home/sub%20pages/sportspage.dart';
 import 'package:ticpin/pages/profile/profilepage.dart';
 import 'package:ticpin/pages/home/sub%20pages/eventspage.dart';
 import 'package:ticpin/pages/home/sub%20pages/youpage.dart';
+import 'package:ticpin/pages/profile/sub%20pages/ticlistpage.dart';
 import 'package:ticpin/services/controllers/event_controller.dart';
 import 'package:ticpin/services/controllers/location_controller.dart';
 import 'package:ticpin/services/qrcode.dart';
@@ -30,10 +32,30 @@ class Homepage extends StatefulWidget {
   State<Homepage> createState() => _HomepageState();
 }
 
-class _HomepageState extends State<Homepage>
-    with SingleTickerProviderStateMixin {
+class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
   final eventController = Get.find<EventController>();
   final locationController = Get.find<LocationController>();
+  final UserService _userService = UserService();
+
+  String? profilePicUrl, name;
+  bool isDataLoaded = true;
+
+  Future<void> _loadUserData() async {
+    setState(() => isDataLoaded = true);
+
+    try {
+      final userData = await _userService.getUserData();
+      if (userData != null) {
+        name = userData.name ?? '';
+
+        profilePicUrl = userData.profilePicUrl;
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+    } finally {
+      setState(() => isDataLoaded = false);
+    }
+  }
 
   double? lat;
   double? lng;
@@ -91,9 +113,9 @@ class _HomepageState extends State<Homepage>
         _titleOpacity = opacity.clamp(0.0, 1.0);
       });
     }
-    setState(() {
-      _scrollOffset = offset;
-    });
+    // setState(() {
+    //   _scrollOffset = offset;
+    // });
   }
 
   Widget buildTabItem(int index) {
@@ -150,7 +172,7 @@ class _HomepageState extends State<Homepage>
     );
   }
 
-  double _scrollOffset = 1;
+  // double _scrollOffset = 1;
   @override
   void initState() {
     super.initState();
@@ -162,12 +184,13 @@ class _HomepageState extends State<Homepage>
         } // Update state when tab changes
       });
     _scrollController.addListener(_onScroll);
+    _loadUserData();
   }
 
-  double _fadeValue() {
-    const maxScroll = 200.0;
-    return (_scrollOffset / maxScroll).clamp(0.01, 1.0);
-  }
+  // double _fadeValue() {
+  //   const maxScroll = 200.0;
+  //   return (_scrollOffset / maxScroll).clamp(0.01, 1.0);
+  // }
 
   @override
   void dispose() {
@@ -250,7 +273,7 @@ class _HomepageState extends State<Homepage>
                       locationController.city.value.isEmpty ||
                       eventController.loading.value;
 
-                  if (isLoading) {
+                  if (isLoading || isDataLoaded) {
                     return Container(
                       color: whiteColor,
                       child: Stack(
@@ -345,6 +368,7 @@ class _HomepageState extends State<Homepage>
                               top: size.safeHeight * 0.19,
                             ),
                             child: SingleChildScrollView(
+                              physics: NeverScrollableScrollPhysics(),
                               child: Column(
                                 children: [
                                   SizedBox(height: 20),
@@ -436,7 +460,8 @@ class _HomepageState extends State<Homepage>
 
                             flexibleSpace: Padding(
                               padding: EdgeInsets.only(top: 2),
-                              child: Opacity(
+                              child: AnimatedOpacity(
+                                duration: Duration.zero,
                                 opacity: _titleOpacity, // Your fade logic
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -454,18 +479,37 @@ class _HomepageState extends State<Homepage>
                                           ),
                                           child: GestureDetector(
                                             onTap: () => Get.to(Profile()),
-                                            child: CircleAvatar(
-                                              radius: size.safeWidth * 0.055,
-                                              backgroundColor: Colors.white30,
-                                              child: CircleAvatar(
-                                                radius: size.safeWidth * 0.04,
-                                                backgroundColor: Colors.white70,
-                                                child: Icon(
-                                                  Icons.person,
-                                                  color: Colors.black87,
-                                                ),
-                                              ),
-                                            ),
+                                            child:
+                                                profilePicUrl != null
+                                                    ? CircleAvatar(
+                                                      radius:
+                                                          size.safeWidth *
+                                                          0.055,
+                                                      backgroundImage:
+                                                          NetworkImage(
+                                                            profilePicUrl!,
+                                                          ),
+                                                      backgroundColor:
+                                                          Colors.white70,
+                                                    )
+                                                    : CircleAvatar(
+                                                      radius:
+                                                          size.safeWidth *
+                                                          0.055,
+                                                      backgroundColor:
+                                                          Colors.white30,
+                                                      child: CircleAvatar(
+                                                        radius:
+                                                            size.safeWidth *
+                                                            0.04,
+                                                        backgroundColor:
+                                                            Colors.white70,
+                                                        child: Icon(
+                                                          Icons.person,
+                                                          color: Colors.black87,
+                                                        ),
+                                                      ),
+                                                    ),
                                           ),
                                         ),
                                         Column(
@@ -476,7 +520,7 @@ class _HomepageState extends State<Homepage>
                                           children: [
                                             SizedBox(),
                                             Text(
-                                              'Yuvan',
+                                              name!,
                                               style: TextStyle(
                                                 fontSize:
                                                     size.safeWidth * 0.039,
@@ -651,23 +695,38 @@ class _HomepageState extends State<Homepage>
                                     ),
                                     Row(
                                       children: [
+                                        // Padding(
+                                        //   padding: EdgeInsets.only(
+                                        //     right: size.safeWidth * 0.04,
+                                        //   ),
+                                        //   child: GestureDetector(
+                                        //     onTap: () => Get.to(QRpage()),
+                                        //     child: SvgPicture.asset(
+                                        //       'assets/images/icons/qr code.svg',
+                                        //       width: size.safeWidth * 0.07,
+                                        //       height: size.safeWidth * 0.07,
+                                        //       // ignore: deprecated_member_use
+                                        //       color: Colors.white.withAlpha(
+                                        //         230,
+                                        //       ),
+                                        //     ),
+                                        //   ),
+                                        // ),
                                         Padding(
                                           padding: EdgeInsets.only(
                                             right: size.safeWidth * 0.04,
                                           ),
                                           child: GestureDetector(
-                                            onTap: () => Get.to(QRpage()),
-                                            child: SvgPicture.asset(
-                                              'assets/images/icons/qr code.svg',
-                                              width: size.safeWidth * 0.07,
-                                              height: size.safeWidth * 0.07,
-                                              // ignore: deprecated_member_use
-                                              color: Colors.white.withAlpha(
-                                                230,
-                                              ),
+                                            onTap: () => Get.to(TicListPage()),
+                                            child: Icon(
+                                              Icons
+                                                  .local_fire_department_rounded,
+                                              color: whiteColor,
+                                              size: size.safeWidth * 0.07,
                                             ),
                                           ),
                                         ),
+
                                         // Padding(
                                         //   padding: EdgeInsets.only(
                                         //     right: size.safeWidth * 0.04,

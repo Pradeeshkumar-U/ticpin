@@ -32,7 +32,6 @@
 //       raw["dateTime"] is Timestamp ? (raw["dateTime"] as Timestamp).toDate() : null;
 // }
 
-
 // import 'package:cloud_firestore/cloud_firestore.dart';
 
 // class EventFull {
@@ -340,17 +339,11 @@ import 'package:flutter/material.dart';
 class EventFull {
   final String id;
   final Map<String, dynamic> raw;
-
-  EventFull({
-    required this.id,
-    required this.raw,
-  });
+  double distanceKm;
+  EventFull({required this.id, required this.raw, this.distanceKm = 0.0});
 
   factory EventFull.fromDoc(DocumentSnapshot doc) {
-    return EventFull(
-      id: doc.id,
-      raw: doc.data() as Map<String, dynamic>,
-    );
+    return EventFull(id: doc.id, raw: doc.data() as Map<String, dynamic>);
   }
 
   // Convert Google Drive link → direct link
@@ -373,15 +366,20 @@ class EventFull {
   List<EventDay> get days {
     final daysList = raw["days"] as List?;
     if (daysList == null || daysList.isEmpty) return [];
-    
-    return daysList.asMap().entries.map((entry) {
-      final dayMap = entry.value as Map<String, dynamic>;
-      final dayKey = "day${entry.key + 1}";
-      final dayData = dayMap[dayKey] as Map<String, dynamic>?;
-      
-      if (dayData == null) return null;
-      return EventDay.fromMap(dayData, entry.key + 1);
-    }).whereType<EventDay>().toList();
+
+    return daysList
+        .asMap()
+        .entries
+        .map((entry) {
+          final dayMap = entry.value as Map<String, dynamic>;
+          final dayKey = "day${entry.key + 1}";
+          final dayData = dayMap[dayKey] as Map<String, dynamic>?;
+
+          if (dayData == null) return null;
+          return EventDay.fromMap(dayData, entry.key + 1);
+        })
+        .whereType<EventDay>()
+        .toList();
   }
 
   DateTime? get firstDate => days.isNotEmpty ? days.first.date : null;
@@ -397,11 +395,14 @@ class EventFull {
 
   // MEDIA
   Map<String, dynamic> get media => raw["media"] ?? {};
-  String get posterUrl => media["posterLink"] ?? ""; // Firebase Storage - no conversion
-  String get videoUrl => driveToDirect(media["videoLink"] ?? ""); // Drive link - convert
-  
+  String get posterUrl =>
+      media["posterLink"] ?? ""; // Firebase Storage - no conversion
+  String get videoUrl =>
+      driveToDirect(media["videoLink"] ?? ""); // Drive link - convert
+
   List<String> get galleryImages =>
-      (media["galleryImages"] as List?)?.map((e) => e.toString()).toList() ?? [];
+      (media["galleryImages"] as List?)?.map((e) => e.toString()).toList() ??
+      [];
 
   // VENUE
   Map<String, dynamic> get venue => raw["venue"] ?? {};
@@ -515,8 +516,10 @@ class EventDay {
   }
 
   String get formattedDate => "${date.day}/${date.month}/${date.year}";
-  String get formattedStartTime => "${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}";
-  String get formattedEndTime => "${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}";
+  String get formattedStartTime =>
+      "${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}";
+  String get formattedEndTime =>
+      "${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}";
 }
 
 // ------------------------------------------
@@ -561,7 +564,8 @@ class EventTicket {
       price: map["price"] ?? 0,
       quantity: map["quantity"] ?? 0,
       seatingType: map["seatingType"] ?? "",
-      inclusions: (map["inclusions"] as List?)?.map((e) => e.toString()).toList() ?? [],
+      inclusions:
+          (map["inclusions"] as List?)?.map((e) => e.toString()).toList() ?? [],
       bookingCutoff: parseBookingCutoff(map["bookingCutoff"]),
     );
   }

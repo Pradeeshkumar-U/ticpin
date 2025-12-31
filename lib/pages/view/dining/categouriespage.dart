@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ticpin/constants/colors.dart';
 import 'package:ticpin/constants/services.dart';
+import 'package:ticpin/constants/shapes/ticbutton.dart';
 import 'package:ticpin/constants/size.dart';
 
 class CategoryPage extends StatefulWidget {
@@ -380,77 +381,77 @@ class _CategoryPageState extends State<CategoryPage> {
   }
 
   // Ticlist Button
-  bool isSelected = false;
-  Widget ticlist_mini(bool tap, double wid) {
-    bool isSelected = tap, isGlowing = false;
+  // bool isSelected = false;
+  // Widget ticlist_mini(bool tap, double wid) {
+  //   bool isSelected = tap, isGlowing = false;
 
-    return StatefulBuilder(
-      builder: (context, set) {
-        glowOff() => Future.delayed(const Duration(milliseconds: 700), () {
-          if (context.mounted) set(() => isGlowing = false);
-        });
+  //   return StatefulBuilder(
+  //     builder: (context, set) {
+  //       glowOff() => Future.delayed(const Duration(milliseconds: 700), () {
+  //         if (context.mounted) set(() => isGlowing = false);
+  //       });
 
-        return InkWell(
-          splashFactory: NoSplash.splashFactory,
-          onTap: () {
-            set(() {
-              isSelected = !isSelected;
-            });
-            if (isSelected) {
-              isGlowing = true;
-              glowOff();
-            }
-          },
-          child: Container(
-            padding: EdgeInsets.all(wid * 0.01),
-            decoration: BoxDecoration(
-              color: isSelected ? Colors.black : Colors.black12,
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                AnimatedOpacity(
-                  opacity: isGlowing ? 1 : 0,
-                  duration: const Duration(milliseconds: 300),
-                  child: Icon(
-                    Icons.local_fire_department_sharp,
-                    size: wid * 0.075 + 5,
-                    color: Colors.orangeAccent.withOpacity(0.5),
-                    shadows: [
-                      Shadow(
-                        color: Colors.orangeAccent.withOpacity(0.8),
-                        blurRadius: 25,
-                      ),
-                    ],
-                  ),
-                ),
-                isSelected
-                    ? ShaderMask(
-                      shaderCallback:
-                          (r) => const LinearGradient(
-                            colors: [Color(0xFFFFBF00), Color(0xFFFF0000)],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ).createShader(r),
-                      child: Icon(
-                        Icons.local_fire_department_sharp,
-                        color: Colors.white,
-                        size: wid * 0.075,
-                      ),
-                    )
-                    : Icon(
-                      Icons.local_fire_department_outlined,
-                      color: Colors.black45,
-                      size: wid * 0.075,
-                    ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+  //       return InkWell(
+  //         splashFactory: NoSplash.splashFactory,
+  //         onTap: () {
+  //           set(() {
+  //             isSelected = !isSelected;
+  //           });
+  //           if (isSelected) {
+  //             isGlowing = true;
+  //             glowOff();
+  //           }
+  //         },
+  //         child: Container(
+  //           padding: EdgeInsets.all(wid * 0.01),
+  //           decoration: BoxDecoration(
+  //             color: isSelected ? Colors.black : Colors.black12,
+  //             borderRadius: BorderRadius.circular(15),
+  //           ),
+  //           child: Stack(
+  //             alignment: Alignment.center,
+  //             children: [
+  //               AnimatedOpacity(
+  //                 opacity: isGlowing ? 1 : 0,
+  //                 duration: const Duration(milliseconds: 300),
+  //                 child: Icon(
+  //                   Icons.local_fire_department_sharp,
+  //                   size: wid * 0.075 + 5,
+  //                   color: Colors.orangeAccent.withOpacity(0.5),
+  //                   shadows: [
+  //                     Shadow(
+  //                       color: Colors.orangeAccent.withOpacity(0.8),
+  //                       blurRadius: 25,
+  //                     ),
+  //                   ],
+  //                 ),
+  //               ),
+  //               isSelected
+  //                   ? ShaderMask(
+  //                     shaderCallback:
+  //                         (r) => const LinearGradient(
+  //                           colors: [Color(0xFFFFBF00), Color(0xFFFF0000)],
+  //                           begin: Alignment.topCenter,
+  //                           end: Alignment.bottomCenter,
+  //                         ).createShader(r),
+  //                     child: Icon(
+  //                       Icons.local_fire_department_sharp,
+  //                       color: Colors.white,
+  //                       size: wid * 0.075,
+  //                     ),
+  //                   )
+  //                   : Icon(
+  //                     Icons.local_fire_department_outlined,
+  //                     color: Colors.black45,
+  //                     size: wid * 0.075,
+  //                   ),
+  //             ],
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
 
   final siz = Sizes();
   @override
@@ -686,7 +687,7 @@ class _CategoryPageState extends State<CategoryPage> {
                                 ],
                               ),
                               Spacer(),
-                              ticlist_mini(isSelected, siz.safeWidth),
+                              // TicListButton(itemId: itemId, itemType: itemType, isInTicList: isInTicList, isBackground: isBackground, wid: wid)
                             ],
                           ),
                         ),
