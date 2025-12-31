@@ -1279,6 +1279,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:ticpin/constants/colors.dart';
+import 'package:ticpin/constants/models/user/user.dart';
+import 'package:ticpin/constants/shapes/ticbutton.dart';
 import 'package:ticpin/constants/shimmer.dart';
 import 'package:ticpin/constants/size.dart';
 import 'package:ticpin/constants/temporary.dart';
@@ -1765,90 +1767,17 @@ class _RestaurentpageState extends State<Restaurentpage>
                           onPressed: () {},
                           icon: CircleAvatar(
                             backgroundColor: Colors.white54,
-                            child: StatefulBuilder(
-                              builder: (context, set) {
-                                glowOff() => Future.delayed(
-                                  const Duration(milliseconds: 700),
-                                  () {
-                                    if (context.mounted)
-                                      set(() => isGlowing = false);
-                                  },
-                                );
-
-                                return InkWell(
-                                  splashFactory: NoSplash.splashFactory,
-                                  onTap: () {
-                                    set(() {
-                                      isSelected = !isSelected;
-                                    });
-                                    if (isSelected) {
-                                      isGlowing = true;
-                                      glowOff();
-                                    }
-                                  },
-                                  child: Container(
-                                    padding: EdgeInsets.all(
-                                      size.safeWidth * 0.01,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.transparent,
-                                      borderRadius: BorderRadius.circular(15),
-                                    ),
-                                    child: Stack(
-                                      alignment: Alignment.center,
-                                      children: [
-                                        AnimatedOpacity(
-                                          opacity: isGlowing ? 1 : 0,
-                                          duration: const Duration(
-                                            milliseconds: 300,
-                                          ),
-                                          child: Icon(
-                                            Icons.local_fire_department_sharp,
-                                            size: size.safeWidth * 0.07 + 3,
-                                            color: Colors.orangeAccent
-                                                .withOpacity(0.5),
-                                            shadows: [
-                                              Shadow(
-                                                color: Colors.orangeAccent
-                                                    .withOpacity(0.8),
-                                                blurRadius: 25,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        isSelected
-                                            ? ShaderMask(
-                                              shaderCallback:
-                                                  (r) => const LinearGradient(
-                                                    colors: [
-                                                      Color(0xFFFFBF00),
-                                                      Color(0xFFFF0000),
-                                                    ],
-                                                    begin: Alignment.topCenter,
-                                                    end: Alignment.bottomCenter,
-                                                  ).createShader(r),
-                                              child: Icon(
-                                                Icons
-                                                    .local_fire_department_sharp,
-                                                color: Colors.white,
-                                                size: size.safeWidth * 0.07,
-                                              ),
-                                            )
-                                            : Icon(
-                                              Icons
-                                                  .local_fire_department_outlined,
-                                              color: Color.lerp(
-                                                blackColor.withAlpha(200),
-                                                blackColor.withAlpha(200),
-                                                _appBarOpacity,
-                                              ),
-                                              size: size.safeWidth * 0.07,
-                                            ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
+                            child: TicListButton(
+                              itemId: diningData!.diningId,
+                              itemType: TicListItemType.dining,
+                              // isInTicList: isInTicList,
+                              isBackground: false,
+                              // wid: size.width,
+                              color: Color.lerp(
+                                blackColor.withAlpha(170),
+                                blackColor.withAlpha(200),
+                                _appBarOpacity,
+                              ),
                             ),
                           ),
                         ),

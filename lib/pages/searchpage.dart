@@ -530,29 +530,32 @@ class _UniversalSearchPageState extends State<UniversalSearchPage>
         child: Row(
           children: [
             // Image
-            ClipRRect(
-              borderRadius: BorderRadius.all(Radius.circular(12)),
-              // child: Image.network(
-              //   result.imageUrl!,
-              //   width: 100,
-              //   height: 100,
-              //   fit: BoxFit.cover,
-              //   errorBuilder: (context, error, stackTrace) {
-              //     return _buildPlaceholderImage(result.type);
-              //   },
-              // ),
-              child:
-                  result.imageUrl != null
-                      ? Image.network(
-                        result.imageUrl!,
-                        width: 70,
-                        height: 70,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildPlaceholderImage(result.type);
-                        },
-                      )
-                      : _buildPlaceholderImage(result.type),
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: ClipRRect(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+                // child: Image.network(
+                //   result.imageUrl!,
+                //   width: 100,
+                //   height: 100,
+                //   fit: BoxFit.cover,
+                //   errorBuilder: (context, error, stackTrace) {
+                //     return _buildPlaceholderImage(result.type);
+                //   },
+                // ),
+                child:
+                    result.imageUrl != null
+                        ? Image.network(
+                          result.imageUrl!,
+                          width: 70,
+                          height: 70,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildPlaceholderImage(result.type);
+                          },
+                        )
+                        : _buildPlaceholderImage(result.type),
+              ),
             ),
 
             // Content
@@ -615,7 +618,7 @@ class _UniversalSearchPageState extends State<UniversalSearchPage>
 
                     // Additional info for events
                     if (result.type == SearchResultType.event) ...[
-                      SizedBox(height: 6),
+                      // SizedBox(height: 6),
                       Row(
                         children: [
                           if (result.date != null &&

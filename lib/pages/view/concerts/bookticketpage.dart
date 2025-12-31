@@ -851,6 +851,8 @@ class _UserBookingPageState extends State<UserBookingPage> {
     });
   }
 
+  Sizes size = Sizes();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -884,13 +886,17 @@ class _UserBookingPageState extends State<UserBookingPage> {
           }
 
           return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Choose Tickets',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontFamily: 'Regular',
-                  fontWeight: FontWeight.bold,
+              Padding(
+                padding: EdgeInsets.only(left: size.safeWidth * 0.05),
+                child: Text(
+                  'Choose Tickets',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: 'Regular',
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               Expanded(
@@ -985,9 +991,11 @@ class _UserBookingPageState extends State<UserBookingPage> {
     final selectedQty = selectedQuantities[ticket['id']] ?? 0;
 
     return Card(
+      color: whiteColor,
+      shadowColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: gradient2, width: 1.5),
+        side: BorderSide(color: Colors.black45, width: 1.5),
       ),
       surfaceTintColor: whiteColor,
       margin: const EdgeInsets.only(bottom: 16),
@@ -1004,19 +1012,23 @@ class _UserBookingPageState extends State<UserBookingPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        ticket['type'] ?? 'Unknown',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontFamily: 'Regular',
-                          fontWeight: FontWeight.bold,
+                      FittedBox(
+                        fit: BoxFit.fitWidth,
+                        child: Text(
+                          ticket['type'] ?? 'Unknown',
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: size.safeWidth * 0.04,
+                            fontFamily: 'Regular',
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '₹$price',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: size.safeWidth * 0.04,
                           fontFamily: 'Regular',
                           color: Colors.green.shade700,
                           fontWeight: FontWeight.w600,
@@ -1025,79 +1037,204 @@ class _UserBookingPageState extends State<UserBookingPage> {
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color:
-                        isAvailable
-                            ? Colors.green.shade100
-                            : Colors.red.shade100,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    isAvailable ? '$available Available' : 'SOLD OUT',
-                    style: TextStyle(
-                      color:
-                          isAvailable
-                              ? Colors.green.shade900
-                              : Colors.red.shade900,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Regular',
-                      fontSize: 12,
+                if (isAvailable)
+                  Container(
+                    width: size.safeWidth * 0.3,
+                    height: size.safeWidth * 0.13,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black12,
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child:
+                        selectedQty == 0
+                            ? GestureDetector(
+                              onTap: () {
+                                if (mounted) {
+                                  setState(() {
+                                    selectedQuantities[ticket['id']] =
+                                        selectedQty + 1;
+                                  });
+                                }
+                              },
+                              child: Center(
+                                child: Text(
+                                  'add',
+                                  style: const TextStyle(
+                                    fontSize: 17,
+                                    fontFamily: 'Regular',
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            )
+                            : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                IconButton(
+                                  onPressed:
+                                      selectedQty > 0
+                                          ? () {
+                                            setState(() {
+                                              selectedQuantities[ticket['id']] =
+                                                  selectedQty - 1;
+                                            });
+                                          }
+                                          : null,
+                                  icon: const Icon(Icons.remove_circle),
+                                  // iconSize: 20,
+                                  color:
+                                      selectedQty > 0
+                                          ? blackColor
+                                          : Colors.grey,
+                                ),
+                                Text(
+                                  '$selectedQty',
+                                  style: const TextStyle(
+                                    fontSize: 17,
+                                    fontFamily: 'Regular',
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed:
+                                      selectedQty < available.clamp(1, 10)
+                                          ? () {
+                                            setState(() {
+                                              selectedQuantities[ticket['id']] =
+                                                  selectedQty + 1;
+                                            });
+                                          }
+                                          : null,
+                                  icon: const Icon(Icons.add_circle),
+                                  // iconSize: 20,
+                                  color:
+                                      selectedQty < available.clamp(1, 10)
+                                          ? blackColor
+                                          : Colors.grey,
+                                ),
+                                // if (selectedQty > 0) ...[
+
+                                //   Column(
+                                //     crossAxisAlignment: CrossAxisAlignment.end,
+                                //     children: [
+
+                                //       Text(
+                                //         '₹${price * selectedQty}',
+                                //         style: TextStyle(
+                                //           fontSize: 18,
+                                //           fontFamily: 'Regular',
+                                //           fontWeight: FontWeight.bold,
+                                //           color: Colors.green.shade700,
+                                //         ),
+                                //       ),
+                                //     ],
+                                //   ),
+                                // ],
+                              ],
+                            ),
+                  )
+                else
+                  Center(
+                    child: Text(
+                      'SOLD OUT',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Regular',
+                      ),
                     ),
                   ),
-                ),
+                //   Container(
+                //     padding: const EdgeInsets.symmetric(
+                //       horizontal: 12,
+                //       vertical: 6,
+                //     ),
+                //     decoration: BoxDecoration(
+                //       color:
+                //           isAvailable
+                //               ? Colors.green.shade100
+                //               : Colors.red.shade100,
+                //       borderRadius: BorderRadius.circular(20),
+                //     ),
+                //     child: Text(
+                //       isAvailable ? '$available Available' : 'SOLD OUT',
+                //       style: TextStyle(
+                //         color:
+                //             isAvailable
+                //                 ? Colors.green.shade900
+                //                 : Colors.red.shade900,
+                //         fontWeight: FontWeight.bold,
+                //         fontFamily: 'Regular',
+                //         fontSize: 12,
+                //       ),
+                //     ),
+                //   ),
               ],
             ),
 
-            if (ticket['seatingType'] != null) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(Icons.event_seat, size: 16, color: Colors.grey.shade600),
-                  const SizedBox(width: 4),
-                  Text(
-                    ticket['seatingType'],
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontFamily: 'Regular',
-                    ),
-                  ),
-                ],
-              ),
-            ],
-
+            // if (ticket['seatingType'] != null) ...[
+            //   const SizedBox(height: 8),
+            //   Row(
+            //     children: [
+            //       Icon(Icons.event_seat, size: 16, color: Colors.grey.shade600),
+            //       const SizedBox(width: 4),
+            //       Text(
+            //         ticket['seatingType'],
+            //         style: TextStyle(
+            //           color: Colors.grey.shade600,
+            //           fontFamily: 'Regular',
+            //         ),
+            //       ),
+            //     ],
+            //   ),
+            // ],
             if (ticket['inclusions'] != null &&
                 (ticket['inclusions'] as List).isNotEmpty) ...[
               const SizedBox(height: 12),
-              const Text(
-                'Includes:',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Regular',
-                ),
-              ),
-              const SizedBox(height: 4),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
+              // const Text(
+              //   'Includes:',
+              //   style: TextStyle(
+              //     fontWeight: FontWeight.w600,
+              //     fontFamily: 'Regular',
+              //   ),
+              // ),
+              // const SizedBox(height: 4),
+              // Wrap(
+              //   spacing: 8,
+              //   runSpacing: 4,
+              //   children:
+              //       (ticket['inclusions'] as List)
+              //           .map(
+              //             (inclusion) => Chip(
+              //               label: Text(
+              //                 inclusion,
+              //                 style: const TextStyle(
+              //                   fontSize: 12,
+              //                   fontFamily: 'Regular',
+              //                 ),
+              //               ),
+              //               backgroundColor: Colors.grey.shade200,
+              //               materialTapTargetSize:
+              //                   MaterialTapTargetSize.shrinkWrap,
+              //             ),
+              //           )
+              //           .toList(),
+              // ),
+              Column(
                 children:
                     (ticket['inclusions'] as List)
                         .map(
-                          (inclusion) => Chip(
-                            label: Text(
-                              inclusion,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontFamily: 'Regular',
-                              ),
+                          (inclusion) => Text(
+                            inclusion,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontFamily: 'Regular',
                             ),
-                            backgroundColor: Colors.grey.shade200,
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
                           ),
                         )
                         .toList(),
@@ -1107,90 +1244,6 @@ class _UserBookingPageState extends State<UserBookingPage> {
             const SizedBox(height: 16),
 
             // Quantity Selector
-            if (isAvailable)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    onPressed:
-                        selectedQty > 0
-                            ? () {
-                              setState(() {
-                                selectedQuantities[ticket['id']] =
-                                    selectedQty - 1;
-                              });
-                            }
-                            : null,
-                    icon: const Icon(Icons.remove_circle),
-                    iconSize: 32,
-                    color: selectedQty > 0 ? blackColor : Colors.grey,
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      '$selectedQty',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontFamily: 'Regular',
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed:
-                        selectedQty < available.clamp(1, 10)
-                            ? () {
-                              setState(() {
-                                selectedQuantities[ticket['id']] =
-                                    selectedQty + 1;
-                              });
-                            }
-                            : null,
-                    icon: const Icon(Icons.add_circle),
-                    iconSize: 32,
-                    color:
-                        selectedQty < available.clamp(1, 10)
-                            ? blackColor
-                            : Colors.grey,
-                  ),
-                  if (selectedQty > 0) ...[
-                    const Spacer(),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        const Text('Subtotal', style: TextStyle(fontSize: 12)),
-                        Text(
-                          '₹${price * selectedQty}',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontFamily: 'Regular',
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green.shade700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              )
-            else
-              Center(
-                child: Text(
-                  'SOLD OUT',
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Regular',
-                  ),
-                ),
-              ),
           ],
         ),
       ),

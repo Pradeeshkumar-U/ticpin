@@ -28,12 +28,7 @@ class UserService {
         'profilePicUrl': null,
         'eventBookings': [],
         'turfBookings': [],
-        'ticList': {
-          'events': [],
-          'turfs': [],
-          'artists': [],
-          'dining': [],
-        },
+        'ticList': {'events': [], 'turfs': [], 'artists': [], 'dining': []},
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': null,
       };
@@ -147,6 +142,40 @@ class UserService {
     });
   }
 
+  Future<void> saveUserBooking({
+    required String bookingId,
+    required String bookingType, // "event" | "turf"
+    required Map<String, dynamic> bookingData,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No user logged in');
+
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('bookings')
+        .doc(bookingId)
+        .set({
+          ...bookingData,
+          'bookingType': bookingType,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+  }
+
+  Stream<QuerySnapshot> getUserBookingsStream() {
+    final user = _auth.currentUser;
+
+  
+    if (user == null) return const Stream.empty();
+
+    return _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('bookings')
+        .orderBy('createdAt', descending: true)
+        .snapshots();
+  }
+
   /// Add turf booking
   Future<void> addTurfBooking(String bookingId) async {
     final user = _auth.currentUser;
@@ -168,7 +197,8 @@ class UserService {
 
     final bookings = await Future.wait(
       userData.eventBookings.map((bookingId) async {
-        final doc = await _firestore.collection('bookings').doc(bookingId).get();
+        final doc =
+            await _firestore.collection('bookings').doc(bookingId).get();
         if (doc.exists) {
           return {'id': doc.id, ...doc.data() as Map<String, dynamic>};
         }
@@ -189,7 +219,8 @@ class UserService {
 
     final bookings = await Future.wait(
       userData.turfBookings.map((bookingId) async {
-        final doc = await _firestore.collection('turf_bookings').doc(bookingId).get();
+        final doc =
+            await _firestore.collection('turf_bookings').doc(bookingId).get();
         if (doc.exists) {
           return {'id': doc.id, ...doc.data() as Map<String, dynamic>};
         }
@@ -221,9 +252,9 @@ class UserService {
     final userData = await getUserData();
     if (userData == null) return false;
 
-    return userData.name != null && 
-           userData.name!.isNotEmpty &&
-           userData.email != null && 
-           userData.email!.isNotEmpty;
+    return userData.name != null &&
+        userData.name!.isNotEmpty &&
+        userData.email != null &&
+        userData.email!.isNotEmpty;
   }
 }

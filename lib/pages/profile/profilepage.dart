@@ -1012,15 +1012,15 @@ class _ProfileState extends State<Profile> {
                 ),
               ),
             ),
-            SizedBox(height: 4),
-            Text(
-              '$count bookings',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.9),
-                fontSize: 12,
-                fontFamily: 'Regular',
-              ),
-            ),
+            // SizedBox(height: 4),
+            // Text(
+            //   '$count bookings',
+            //   style: TextStyle(
+            //     color: Colors.white.withOpacity(0.9),
+            //     fontSize: 12,
+            //     fontFamily: 'Regular',
+            //   ),
+            // ),
           ],
         ),
       ),

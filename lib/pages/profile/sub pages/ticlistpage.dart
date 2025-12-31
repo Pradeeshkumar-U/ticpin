@@ -270,7 +270,7 @@ class _TicListPageState extends State<TicListPage>
               onPressed: () => _tabController?.animateTo(1),
               child: Text(
                 'View all events',
-                style: TextStyle(fontFamily: 'Regular'),
+                style: TextStyle(fontFamily: 'Regular', color: blackColor),
               ),
             ),
           SizedBox(height: 16),
@@ -284,7 +284,7 @@ class _TicListPageState extends State<TicListPage>
               onPressed: () => _tabController?.animateTo(2),
               child: Text(
                 'View all turfs',
-                style: TextStyle(fontFamily: 'Regular'),
+                style: TextStyle(fontFamily: 'Regular', color: blackColor),
               ),
             ),
           SizedBox(height: 16),
@@ -298,7 +298,7 @@ class _TicListPageState extends State<TicListPage>
               onPressed: () => _tabController?.animateTo(3),
               child: Text(
                 'View all restaurants',
-                style: TextStyle(fontFamily: 'Regular'),
+                style: TextStyle(fontFamily: 'Regular', color: blackColor),
               ),
             ),
         ],
@@ -610,7 +610,7 @@ class _TicListPageState extends State<TicListPage>
       onTap: onTap,
       child: Container(
         padding: EdgeInsets.only(left: 12),
-        // margin: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        margin: EdgeInsets.symmetric(vertical: 6),
         decoration: BoxDecoration(
           color: whiteColor,
           borderRadius: BorderRadius.circular(12),
@@ -619,29 +619,32 @@ class _TicListPageState extends State<TicListPage>
         child: Row(
           children: [
             // Image
-            ClipRRect(
-              borderRadius: BorderRadius.all(Radius.circular(12)),
-              // child: Image.network(
-              //   result.imageUrl!,
-              //   width: 100,
-              //   height: 100,
-              //   fit: BoxFit.cover,
-              //   errorBuilder: (context, error, stackTrace) {
-              //     return _buildPlaceholderImage(result.type);
-              //   },
-              // ),
-              child:
-                  imageUrl != null
-                      ? Image.network(
-                        imageUrl,
-                        width: 70,
-                        height: 70,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildPlaceholder(type!);
-                        },
-                      )
-                      : _buildPlaceholder(type!),
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 12.0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+                // child: Image.network(
+                //   result.imageUrl!,
+                //   width: 100,
+                //   height: 100,
+                //   fit: BoxFit.cover,
+                //   errorBuilder: (context, error, stackTrace) {
+                //     return _buildPlaceholderImage(result.type);
+                //   },
+                // ),
+                child:
+                    imageUrl != null
+                        ? Image.network(
+                          imageUrl,
+                          width: 70,
+                          height: 70,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return _buildPlaceholder(type!);
+                          },
+                        )
+                        : _buildPlaceholder(type!),
+              ),
             ),
 
             // Content
@@ -704,7 +707,7 @@ class _TicListPageState extends State<TicListPage>
 
                     // Additional info for events
                     if (type == TicListItemType.event) ...[
-                      SizedBox(height: 6),
+                      // SizedBox(height: ),
                       Row(
                         children: [
                           if (date != null && date.isNotEmpty) ...[

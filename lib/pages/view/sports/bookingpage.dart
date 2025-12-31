@@ -940,7 +940,8 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:ticpin/constants/colors.dart';
 import 'package:ticpin/constants/size.dart';
-import 'package:ticpin/pages/view/sports/bookingservice.dart';
+import 'package:ticpin/pages/view/sports/checkoutpage.dart';
+import 'package:ticpin/pages/view/sports/snacksbar.dart';
 
 class SportsBookingPage extends StatefulWidget {
   final String turfId;
@@ -961,6 +962,9 @@ class _SportsBookingPageState extends State<SportsBookingPage>
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   late TabController _tabController;
+  final BookingTimerService _timerService = BookingTimerService();
+  bool _hasPendingBooking = false;
+
   final PageController _pageController = PageController();
 
   int _selectedIndex = 0;
@@ -992,10 +996,94 @@ class _SportsBookingPageState extends State<SportsBookingPage>
   Set<String> bookedSlots = {};
   bool loadingSlots = false;
 
+  Future<void> _checkPendingBooking() async {
+    await _timerService.checkPendingBookings();
+
+    final pendingBooking = _timerService.currentPendingBooking;
+
+    if (pendingBooking != null && pendingBooking.turfId == widget.turfId) {
+      setState(() {
+        _hasPendingBooking = true;
+      });
+
+      // Show dialog and redirect to checkout
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder:
+              (context) => AlertDialog(
+                title: Text(
+                  'Pending Payment',
+                  style: TextStyle(fontFamily: 'Regular'),
+                ),
+                content: Text(
+                  'You have a pending payment for this turf. Please complete the payment or wait for it to expire before making a new booking.',
+                  style: TextStyle(fontFamily: 'Regular'),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context); // Close dialog
+                      Navigator.pop(context); // Go back to turf page
+                    },
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(fontFamily: 'Regular'),
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context); // Close dialog
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => TurfCheckoutPage(
+                                turfId: widget.turfId,
+                                turfData: widget.turfData,
+                                selectedDate: pendingBooking.date,
+                                fieldSize: pendingBooking.fieldSize,
+                                session: pendingBooking.session,
+                                slots:
+                                    pendingBooking.slots
+                                        .map(
+                                          (s) => IntervalSlot(
+                                            s['start'] as String,
+                                            s['end'] as String,
+                                          ),
+                                        )
+                                        .toList(),
+                                totalHours: pendingBooking.totalHours,
+                                totalAmount: pendingBooking.totalAmount,
+                                existingBookingId: pendingBooking.bookingId,
+                              ),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: blackColor,
+                    ),
+                    child: Text(
+                      'Complete Payment',
+                      style: TextStyle(
+                        fontFamily: 'Regular',
+                        color: whiteColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+        );
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     tabs = _generateNextDays(15);
+    _checkPendingBooking();
     _tabController = TabController(length: tabs.length, vsync: this)
       ..addListener(() {
         if (mounted) {
@@ -1204,44 +1292,44 @@ class _SportsBookingPageState extends State<SportsBookingPage>
     return sessionDurations.values.fold(0.0, (sum, hours) => sum + hours);
   }
 
-  void _proceedToCheckout() {
-    // Find which session has selections
-    String? selectedSession;
-    for (var entry in selectedIntervals.entries) {
-      if (entry.value.isNotEmpty) {
-        selectedSession = entry.key;
-        break;
-      }
-    }
+  // void _proceedToCheckout() {
+  //   // Find which session has selections
+  //   String? selectedSession;
+  //   for (var entry in selectedIntervals.entries) {
+  //     if (entry.value.isNotEmpty) {
+  //       selectedSession = entry.key;
+  //       break;
+  //     }
+  //   }
 
-    if (selectedSession == null) return;
+  //   if (selectedSession == null) return;
 
-    final slots = selectedIntervals[selectedSession]!;
-    final pricePerHour = widget.turfData['price_per_hour'] ?? 500;
-    final totalHours = sessionDurations[selectedSession]!;
-    final totalAmount = (pricePerHour * totalHours).round();
+  //   final slots = selectedIntervals[selectedSession]!;
+  //   final pricePerHour = widget.turfData['half_hour_price'] * 2;
+  //   final totalHours = sessionDurations[selectedSession]!;
+  //   final totalAmount = (pricePerHour * totalHours).round();
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) => TurfCheckoutPage(
-              turfId: widget.turfId,
-              turfData: widget.turfData,
-              selectedDate: _getSelectedDate(),
-              fieldSize: selectedFieldSize,
-              session: selectedSession!,
-              slots: slots,
-              totalHours: totalHours,
-              totalAmount: totalAmount,
-            ),
-      ),
-    ).then((_) {
-      // Refresh slots after returning from checkout
-      _fetchBookedSlots();
-      _clearAllSelections();
-    });
-  }
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder:
+  //           (context) => TurfCheckoutPage(
+  //             turfId: widget.turfId,
+  //             turfData: widget.turfData,
+  //             selectedDate: _getSelectedDate(),
+  //             fieldSize: selectedFieldSize,
+  //             session: selectedSession!,
+  //             slots: slots,
+  //             totalHours: totalHours,
+  //             totalAmount: totalAmount,
+  //           ),
+  //     ),
+  //   ).then((_) {
+  //     // Refresh slots after returning from checkout
+  //     _fetchBookedSlots();
+  //     _clearAllSelections();
+  //   });
+  // }
 
   Widget buildIntervalUIUp(String session, List<String> timeLabels) {
     final intervals = buildIntervals(timeLabels);
@@ -1689,6 +1777,33 @@ class _SportsBookingPageState extends State<SportsBookingPage>
 
   @override
   Widget build(BuildContext context) {
+    if (_hasPendingBooking) {
+      return Scaffold(
+        appBar: AppBar(
+          surfaceTintColor: whiteColor,
+          backgroundColor: whiteColor,
+          centerTitle: true,
+          title: Text(
+            widget.turfData['name'] ?? 'Book Turf',
+            style: TextStyle(fontFamily: 'Regular'),
+          ),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text(
+                'Checking pending bookings...',
+                style: TextStyle(fontFamily: 'Regular'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         surfaceTintColor: whiteColor,
@@ -1946,6 +2061,92 @@ class _SportsBookingPageState extends State<SportsBookingPage>
         ],
       ),
     );
+  }
+
+  void _proceedToCheckout() {
+    // Check for pending bookings one more time before proceeding
+    _timerService.checkPendingBookings().then((_) {
+      final pendingBooking = _timerService.currentPendingBooking;
+
+      if (pendingBooking != null && pendingBooking.turfId == widget.turfId) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Please complete your pending payment first'),
+            backgroundColor: Colors.orange,
+            action: SnackBarAction(
+              label: 'Go to Checkout',
+              textColor: Colors.white,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => TurfCheckoutPage(
+                          turfId: widget.turfId,
+                          turfData: widget.turfData,
+                          selectedDate: pendingBooking.date,
+                          fieldSize: pendingBooking.fieldSize,
+                          session: pendingBooking.session,
+                          slots:
+                              pendingBooking.slots
+                                  .map(
+                                    (s) => IntervalSlot(
+                                      s['start'] as String,
+                                      s['end'] as String,
+                                    ),
+                                  )
+                                  .toList(),
+                          totalHours: pendingBooking.totalHours,
+                          totalAmount: pendingBooking.totalAmount,
+                          existingBookingId: pendingBooking.bookingId,
+                        ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+        return;
+      }
+
+      // Find which session has selections
+      String? selectedSession;
+      for (var entry in selectedIntervals.entries) {
+        if (entry.value.isNotEmpty) {
+          selectedSession = entry.key;
+          break;
+        }
+      }
+
+      if (selectedSession == null) return;
+
+      final slots = selectedIntervals[selectedSession]!;
+      final pricePerHour = widget.turfData['half_hour_price'] * 2;
+      final totalHours = sessionDurations[selectedSession]!;
+      final totalAmount = (pricePerHour * totalHours).round();
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => TurfCheckoutPage(
+                turfId: widget.turfId,
+                turfData: widget.turfData,
+                selectedDate: _getSelectedDate(),
+                fieldSize: selectedFieldSize,
+                session: selectedSession!,
+                slots: slots,
+                totalHours: totalHours,
+                totalAmount: totalAmount,
+              ),
+        ),
+      ).then((_) {
+        // Refresh slots after returning from checkout
+        _fetchBookedSlots();
+        _clearAllSelections();
+        _checkPendingBooking(); // Check again
+      });
+    });
   }
 }
 

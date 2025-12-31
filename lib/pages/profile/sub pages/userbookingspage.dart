@@ -3,13 +3,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 // import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ticpin/constants/colors.dart';
 import 'package:ticpin/constants/models/user/userservice.dart';
+import 'package:ticpin/constants/shimmer.dart';
 import 'package:ticpin/constants/size.dart';
 
 // ignore: must_be_immutable
 class UserBookingsPage extends StatefulWidget {
-   int index ;
-   UserBookingsPage({super.key, this.index=0});
- 
+  int index;
+  UserBookingsPage({super.key, this.index = 0});
 
   @override
   State<UserBookingsPage> createState() => _UserBookingsPageState();
@@ -35,7 +35,11 @@ class _UserBookingsPageState extends State<UserBookingsPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(initialIndex: widget.index, length: 4, vsync: this);
+    _tabController = TabController(
+      initialIndex: widget.index,
+      length: 4,
+      vsync: this,
+    );
     _loadBookings();
   }
 
@@ -65,11 +69,11 @@ class _UserBookingsPageState extends State<UserBookingsPage>
       turfBookings = turfs;
       isLoadingTurfs = false;
     });
-    final dining = await _userService.getUserTurfBookings();
-    setState(() {
-      turfBookings = turfs;
-      isLoadingTurfs = false;
-    });
+    //    final dining = await _userService.getUserDiningBookings();
+    // setState(() {
+    //   diningBookings = dining;
+    //   isLoadingDining = false;
+    // });
   }
 
   @override
@@ -85,6 +89,7 @@ class _UserBookingsPageState extends State<UserBookingsPage>
         bottom: TabBar(
           controller: _tabController,
           labelColor: blackColor,
+          splashFactory: NoSplash.splashFactory,
           unselectedLabelColor: Colors.grey,
           indicatorColor: blackColor,
           labelStyle: TextStyle(
@@ -106,12 +111,67 @@ class _UserBookingsPageState extends State<UserBookingsPage>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildAllBookings(),
-          _buildEventBookings(),
-          _buildTurfBookings(),
-          _buildDiningBookings(),
+          _buildBookingsStream(), // All
+          _buildBookingsStream(type: 'event'), // Events
+          _buildBookingsStream(type: 'turf'), // Turfs
+          _buildBookingsStream(type: 'dining'), // Dining
         ],
       ),
+    );
+  }
+
+  Widget _buildBookingsStream({String? type}) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _userService.getUserBookingsStream(),
+      builder: (context, snapshot) {
+        print(snapshot.data.toString());
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          print(snapshot.error.toString());
+          return _buildEmptyState('No bookings yet', Icons.receipt_long);
+        }
+
+        final bookings =
+            snapshot.data!.docs
+                .map((doc) => doc.data() as Map<String, dynamic>)
+                .where((booking) {
+                  if (type == null) return true;
+                  return booking['bookingType'] == type;
+                })
+                .toList();
+
+        if (bookings.isEmpty) {
+          return _buildEmptyState(
+            'No ${type ?? ''} bookings yet',
+            Icons.receipt_long,
+          );
+        }
+
+        return RefreshIndicator(
+          onRefresh: () async {},
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: bookings.length,
+            itemBuilder: (context, index) {
+              final booking = bookings[index];
+
+              switch (booking['bookingType']) {
+                case 'event':
+                  return _buildEventBookingCard(booking);
+                case 'turf':
+                  return buildTurfBookingFromBookingId(booking['bookingId']);
+                case 'dining':
+                  return _buildEventBookingCard(booking); // reuse or custom
+                default:
+                  return const SizedBox.shrink();
+              }
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -418,40 +478,41 @@ class _UserBookingsPageState extends State<UserBookingsPage>
     final createdAt = booking['createdAt'] as Timestamp?;
 
     return Card(
-      margin: EdgeInsets.only(bottom: 16),
+      color: whiteColor,
+      margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
+
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: () => _showBookingDetails(booking, false),
-        borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
+              // HEADER
               Row(
                 children: [
                   Container(
-                    padding: EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: Colors.green.shade100,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(
+                    child: const Icon(
                       Icons.sports_soccer,
                       color: Colors.green,
                       size: 20,
                     ),
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           booking['turfName'] ?? 'Turf',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                             fontFamily: 'Regular',
@@ -459,9 +520,9 @@ class _UserBookingsPageState extends State<UserBookingsPage>
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
-                          'Booking ID: ${booking['bookingId']?.substring(0, 8) ?? 'N/A'}...',
+                          'Booking ID: ${booking['bookingId']?.substring(0, 8)}...',
                           style: TextStyle(
                             fontSize: 12,
                             fontFamily: 'Regular',
@@ -472,7 +533,10 @@ class _UserBookingsPageState extends State<UserBookingsPage>
                     ),
                   ),
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: statusColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
@@ -490,58 +554,58 @@ class _UserBookingsPageState extends State<UserBookingsPage>
                 ],
               ),
 
-              SizedBox(height: 16),
-              Divider(height: 1),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 16),
 
-              // Booking details
+              // DETAILS
               Row(
                 children: [
                   Expanded(
                     child: _buildInfoChip(
                       Icons.calendar_today,
                       booking['date'] ?? 'N/A',
-                      Colors.blue,
+                      Colors.black12,
                     ),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: _buildInfoChip(
                       Icons.wb_sunny,
                       booking['session'] ?? 'N/A',
-                      Colors.orange,
+                      Colors.black12,
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
                     child: _buildInfoChip(
                       Icons.grid_on,
                       booking['fieldSize'] ?? 'N/A',
-                      Colors.purple,
+                      Colors.black12,
                     ),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: _buildInfoChip(
                       Icons.access_time,
-                      '${booking['totalHours']?.toStringAsFixed(1) ?? '0'} hrs',
-                      Colors.teal,
+                      '${booking['totalHours']} hrs',
+                      Colors.black12,
                     ),
                   ),
                 ],
               ),
 
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-              // Total
+              // TOTAL
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  const Text(
                     'Total Amount',
                     style: TextStyle(
                       fontSize: 16,
@@ -551,39 +615,71 @@ class _UserBookingsPageState extends State<UserBookingsPage>
                   ),
                   Text(
                     '₹${booking['totalAmount']}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       fontFamily: 'Regular',
-                      color: Colors.green.shade700,
                     ),
                   ),
                 ],
               ),
 
-              SizedBox(height: 12),
+              const SizedBox(height: 10),
 
-              // Date
-              Row(
-                children: [
-                  Icon(Icons.calendar_today, size: 14, color: Colors.grey),
-                  SizedBox(width: 6),
-                  Text(
-                    createdAt != null
-                        ? _formatDate(createdAt.toDate())
-                        : 'Date unavailable',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontFamily: 'Regular',
-                      color: Colors.grey.shade600,
-                    ),
+              if (createdAt != null)
+                Text(
+                  'Booked on ${_formatDate(createdAt.toDate())}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Regular',
+                    color: Colors.grey.shade600,
                   ),
-                ],
-              ),
+                ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget buildTurfBookingFromBookingId(String bookingId) {
+    return FutureBuilder<QuerySnapshot>(
+      future:
+          FirebaseFirestore.instance
+              .collection('turf_bookings')
+              .where('bookingId', isEqualTo: bookingId)
+              .limit(1)
+              .get(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Padding(
+            padding: EdgeInsets.all(16),
+            child: Container(
+              height: size.safeWidth * 0.7,
+              width: size.safeWidth * 0.9,
+              decoration: BoxDecoration(
+                color: whiteColor,
+
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: LoadingShimmer(
+                width: double.infinity,
+                height: double.infinity,
+                isCircle: false,
+              ),
+            ),
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const SizedBox(); // booking not found
+        }
+
+        final booking =
+            snapshot.data!.docs.first.data() as Map<String, dynamic>;
+
+        return _buildTurfBookingCard(booking);
+      },
     );
   }
 
@@ -597,7 +693,7 @@ class _UserBookingsPageState extends State<UserBookingsPage>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
+          Icon(icon, size: 14, color: blackColor),
           SizedBox(width: 6),
           Expanded(
             child: Text(
@@ -606,7 +702,7 @@ class _UserBookingsPageState extends State<UserBookingsPage>
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 fontFamily: 'Regular',
-                color: color,
+                color: blackColor,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -647,7 +743,11 @@ class _UserBookingsPageState extends State<UserBookingsPage>
   }
 
   String _formatTime(DateTime date) {
-    return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
+    final minute = date.minute.toString().padLeft(2, '0');
+    final period = date.hour >= 12 ? 'PM' : 'AM';
+
+    return '$hour:$minute $period';
   }
 
   void _showBookingDetails(Map<String, dynamic> booking, bool isEvent) {
@@ -816,4 +916,179 @@ class _UserBookingsPageState extends State<UserBookingsPage>
       ),
     );
   }
+  // Widget _buildTurfBookingCard(Map<String, dynamic> booking) {
+  //   final status = booking['status'] ?? 'unknown';
+  //   final statusColor = _getStatusColor(status);
+  //   final createdAt = booking['createdAt'] as Timestamp?;
+
+  //   return Card(
+  //     color: whiteColor,
+  //     margin: EdgeInsets.only(bottom: 16),
+  //     elevation: 2,
+  //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  //     child: InkWell(
+  //       onTap: () => _showBookingDetails(booking, false),
+  //       borderRadius: BorderRadius.circular(16),
+  //       child: Padding(
+  //         padding: EdgeInsets.all(16),
+  //         child: Column(
+  //           crossAxisAlignment: CrossAxisAlignment.start,
+  //           children: [
+  //             // Header
+  //             Row(
+  //               children: [
+  //                 Container(
+  //                   padding: EdgeInsets.all(8),
+  //                   decoration: BoxDecoration(
+  //                     color: Colors.green.shade100,
+  //                     borderRadius: BorderRadius.circular(8),
+  //                   ),
+  //                   child: Icon(
+  //                     Icons.sports_soccer,
+  //                     color: Colors.green,
+  //                     size: 20,
+  //                   ),
+  //                 ),
+  //                 SizedBox(width: 12),
+  //                 Expanded(
+  //                   child: Column(
+  //                     crossAxisAlignment: CrossAxisAlignment.start,
+  //                     children: [
+  //                       Text(
+  //                         booking['turfName'] ?? 'Turf',
+  //                         style: TextStyle(
+  //                           fontSize: 18,
+  //                           fontWeight: FontWeight.bold,
+  //                           fontFamily: 'Regular',
+  //                         ),
+  //                         maxLines: 1,
+  //                         overflow: TextOverflow.ellipsis,
+  //                       ),
+  //                       SizedBox(height: 4),
+  //                       Text(
+  //                         'Booking ID: ${booking['bookingId']?.substring(0, 8) ?? 'N/A'}...',
+  //                         style: TextStyle(
+  //                           fontSize: 12,
+  //                           fontFamily: 'Regular',
+  //                           color: Colors.grey.shade600,
+  //                         ),
+  //                       ),
+  //                     ],
+  //                   ),
+  //                 ),
+  //                 Container(
+  //                   padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+  //                   decoration: BoxDecoration(
+  //                     color: statusColor.withOpacity(0.1),
+  //                     borderRadius: BorderRadius.circular(20),
+  //                   ),
+  //                   child: Text(
+  //                     status.toUpperCase(),
+  //                     style: TextStyle(
+  //                       fontSize: 10,
+  //                       fontWeight: FontWeight.bold,
+  //                       color: statusColor,
+  //                       fontFamily: 'Regular',
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+
+  //             SizedBox(height: 16),
+  //             Divider(height: 1),
+  //             SizedBox(height: 16),
+
+  //             // Booking details
+  //             Row(
+  //               children: [
+  //                 Expanded(
+  //                   child: _buildInfoChip(
+  //                     Icons.calendar_today,
+  //                     booking['date'] ?? 'N/A',
+  //                     Colors.black12,
+  //                   ),
+  //                 ),
+  //                 SizedBox(width: 8),
+  //                 Expanded(
+  //                   child: _buildInfoChip(
+  //                     Icons.wb_sunny,
+  //                     booking['session'] ?? 'N/A',
+  //                     Colors.black12,
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //             SizedBox(height: 8),
+  //             Row(
+  //               children: [
+  //                 Expanded(
+  //                   child: _buildInfoChip(
+  //                     Icons.grid_on,
+  //                     booking['fieldSize'] ?? 'N/A',
+  //                     Colors.black12,
+  //                   ),
+  //                 ),
+  //                 SizedBox(width: 8),
+  //                 Expanded(
+  //                   child: _buildInfoChip(
+  //                     Icons.access_time,
+  //                     '${booking['totalHours']?.toStringAsFixed(1) ?? '0'} hrs',
+  //                     Colors.black12,
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+
+  //             SizedBox(height: 16),
+
+  //             // Total
+  //             Row(
+  //               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //               children: [
+  //                 Text(
+  //                   'Total Amount',
+  //                   style: TextStyle(
+  //                     fontSize: 16,
+  //                     fontWeight: FontWeight.bold,
+  //                     fontFamily: 'Regular',
+  //                   ),
+  //                 ),
+  //                 Text(
+  //                   '₹${booking['totalAmount']}',
+  //                   style: TextStyle(
+  //                     fontSize: 20,
+  //                     fontWeight: FontWeight.bold,
+  //                     fontFamily: 'Regular',
+  //                     color: blackColor,
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+
+  //             SizedBox(height: 10),
+
+  //             // Date
+  //             Row(
+  //               children: [
+  //                 // Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+  //                 // SizedBox(width: 6),
+  //                 Text(
+  //                   createdAt != null
+  //                       ? 'Booked on ${_formatDate(createdAt.toDate())}'
+  //                       : 'Date unavailable',
+  //                   style: TextStyle(
+  //                     fontSize: 12,
+  //                     fontFamily: 'Regular',
+  //                     color: Colors.grey.shade600,
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 }

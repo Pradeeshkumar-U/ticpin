@@ -52,7 +52,7 @@ class _ConcertpageState extends State<Concertpage>
 
   double _opacity = 0.0;
   int _carouselCurrent = 0;
-  bool isInTicList = false;
+  bool? isInTicList;
 
   Future<void> _checkTicListStatus() async {
     final status = await _userService.isInTicList(
@@ -238,7 +238,7 @@ class _ConcertpageState extends State<Concertpage>
   void initState() {
     super.initState();
     _loadEventData();
-
+    _checkTicListStatus();
     _tabController = TabController(length: 4, vsync: this);
 
     _scrollController.addListener(() {
@@ -495,9 +495,9 @@ class _ConcertpageState extends State<Concertpage>
                   TicListButton(
                     itemId: event.eventId,
                     itemType: TicListItemType.event,
-                    isInTicList: isInTicList,
+                    // isInTicList: isInTicList,
                     isBackground: false,
-                    wid: size.width,
+                    // wid: size.width,
                     color: Color.lerp(
                       whiteColor.withAlpha(230),
                       blackColor.withAlpha(200),
