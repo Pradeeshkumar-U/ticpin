@@ -1,0 +1,70 @@
+name: ticpin_partner
+description: ""
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.3+4
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  get: ^4.7.2
+  geolocator: ^14.0.2
+  flutter_svg: ^2.2.1
+  http: ^1.5.0
+  cryptography: ^2.7.0
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^7.0.1
+  sms_autofill: ^2.4.1
+  image_picker: ^1.2.0
+  file_picker: ^10.3.3
+  image: ^4.5.4
+  video_thumbnail: ^0.5.6
+  intl: ^0.20.2
+  provider: ^6.1.5+1
+  firebase_auth: ^6.1.1
+  firebase_core: ^4.2.0
+  cloud_firestore: ^6.0.3
+  firebase_storage: ^13.0.3
+  device_info_plus: ^12.2.0
+  video_player: ^2.10.1
+  google_maps_flutter: ^2.14.0
+  google_places_flutter: ^2.1.1
+  shimmer: ^3.0.0
+  path_provider: ^2.1.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+
+flutter:
+
+  uses-material-design: true
+
+  assets:
+    - assets/images/icons/
+    - assets/images/temp/
+    - assets/images/
+
+  fonts:
+    - family: Light 
+      fonts:
+        - asset: assets/fonts/Light.ttf
+
+    - family: Medium 
+      fonts:
+        - asset: assets/fonts/Medium.ttf
+
+    - family: Regular 
+      fonts:
+        - asset: assets/fonts/Regular.ttf
+
+    - family: Semibold
+      fonts:
+        - asset: assets/fonts/Semibold.ttf
