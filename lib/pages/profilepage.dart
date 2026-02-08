@@ -468,7 +468,7 @@ class _TurfPartnerAdminProfilePageState
       final userId = _auth.currentUser!.uid;
       final storageRef = FirebaseStorage.instance
           .ref()
-          .child('admin_profiles')
+          .child('turf_admin')
           .child('$userId.jpg');
 
       await storageRef.putFile(file);
