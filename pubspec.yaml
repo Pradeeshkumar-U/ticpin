@@ -1,0 +1,91 @@
+name: ticpin
+description: "" # update here to make text available while sharing
+
+publish_to: 'none' 
+
+
+version: 1.0.1+3 # update this version before uploading to play store
+
+environment:
+  sdk: ^3.7.2
+
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  animated_splash_screen: ^1.3.0
+  cupertino_icons: ^1.0.8
+  flutter_svg: ^2.2.0
+  carousel_slider: ^5.1.1
+  get: ^4.7.2
+  http: ^1.5.0
+  url_launcher: ^6.3.2
+  firebase_auth: ^6.0.0
+  firebase_core: ^4.0.0
+  sms_autofill: ^2.4.1
+  video_player: ^2.10.0
+  visibility_detector: ^0.4.0+2
+  buttons_tabbar: ^1.3.15
+  geolocator: ^14.0.2
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^7.0.1
+  cryptography: ^2.7.0
+  flutter_typeahead: ^5.2.0
+  shared_preferences: ^2.5.3
+  geocoding: ^4.0.0
+  sliver_tools: ^0.2.12
+  youtube_player_iframe: ^5.2.2
+  azlistview: ^2.0.0
+  razorpay_flutter: ^1.4.0
+  get_storage: ^2.1.1
+  firebase_storage: ^13.0.1
+  intl: ^0.20.2
+  cloud_firestore: ^6.0.1
+  provider: ^6.1.5+1
+  # google_maps_flutter: ^2.14.0
+  # google_places_flutter: ^2.1.1
+  location: ^8.0.1
+  shimmer: ^3.0.0
+  cached_network_image: ^3.4.1
+  firebase_app_check: ^0.4.1+3
+  image_picker: ^1.2.1
+  pin_code_fields: ^8.0.1
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+
+flutter:
+
+
+  uses-material-design: true
+
+  # To add assets to your application, add an assets section, like this:
+  assets:
+    - assets/images/icons/
+    - assets/images/temp/
+    - assets/images/
+  #   - images/a_dot_ham.jpeg
+
+ 
+  fonts:
+    - family: Light 
+      fonts:
+        - asset: assets/fonts/Light.ttf
+
+    - family: Medium 
+      fonts:
+        - asset: assets/fonts/Medium.ttf
+
+    - family: Regular 
+      fonts:
+        - asset: assets/fonts/Regular.ttf
+
+    - family: Semibold
+      fonts:
+        - asset: assets/fonts/Semibold.ttf
+
