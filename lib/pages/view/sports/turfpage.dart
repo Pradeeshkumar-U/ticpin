@@ -1077,6 +1077,66 @@ class _TurfpageState extends State<Turfpage> with TickerProviderStateMixin {
 
                       SizedBox(height: size.safeHeight * 0.3),
 
+
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              width: size.safeWidth,
+              padding: EdgeInsets.only(
+                top: 10,
+                bottom: 18,
+                left: 20,
+                right: 20,
+              ),
+              color: Colors.white,
+              child: InkWell(
+                onTap: () {
+                  Get.to(
+                    SportsBookingPage(
+                      turfId: widget.turfId,
+                      turfData: turf.raw,
+                    ),
+                  );
+                },
+                child: Container(
+                  width: size.safeWidth * 0.45,
+                  height: size.safeWidth * 0.12,
+                  // margin: EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                  padding: EdgeInsets.symmetric(
+                    // horizontal: 15,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Center(
+                    child: Text(
+                      "Book Now",
+                      style: TextStyle(
+                        fontFamily: 'Regular',
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
                       // Padding(
                       //   padding: EdgeInsets.symmetric(horizontal: 8.0),
                       //   child: GridView.builder(
@@ -1167,62 +1227,3 @@ class _TurfpageState extends State<Turfpage> with TickerProviderStateMixin {
                       // SizedBox(height: 10),
 
                       // PAGE INDICATOR
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              width: size.safeWidth,
-              padding: EdgeInsets.only(
-                top: 10,
-                bottom: 18,
-                left: 20,
-                right: 20,
-              ),
-              color: Colors.white,
-              child: InkWell(
-                onTap: () {
-                  Get.to(
-                    SportsBookingPage(
-                      turfId: widget.turfId,
-                      turfData: turf.raw,
-                    ),
-                  );
-                },
-                child: Container(
-                  width: size.safeWidth * 0.45,
-                  height: size.safeWidth * 0.12,
-                  // margin: EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-                  padding: EdgeInsets.symmetric(
-                    // horizontal: 15,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(13),
-                  ),
-                  child: Center(
-                    child: Text(
-                      "Book Now",
-                      style: TextStyle(
-                        fontFamily: 'Regular',
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

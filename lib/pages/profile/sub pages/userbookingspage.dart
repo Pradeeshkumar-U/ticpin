@@ -5,6 +5,7 @@ import 'package:ticpin/constants/colors.dart';
 import 'package:ticpin/constants/models/user/userservice.dart';
 import 'package:ticpin/constants/shimmer.dart';
 import 'package:ticpin/constants/size.dart';
+import 'package:ticpin/pages/view/dining/diningservice.dart';
 
 // ignore: must_be_immutable
 class UserBookingsPage extends StatefulWidget {
@@ -120,17 +121,641 @@ class _UserBookingsPageState extends State<UserBookingsPage>
     );
   }
 
+  // Add this method to _UserBookingsPageState class in UserBookingsPage
+
+  Widget _buildDiningBookingCard(DiningBooking booking) {
+    final status = booking.status;
+    final statusColor = _getStatusColor(status);
+    final createdAt = booking.createdAt;
+
+    final isTableBooking = booking.isTableBooking;
+    final isBillPayment = booking.isBillPayment;
+
+    return Card(
+      color: whiteColor,
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        onTap: () => _showDiningBookingDetails(booking),
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color:
+                          isTableBooking
+                              ? Colors.purple.shade100
+                              : Colors.orange.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      isTableBooking ? Icons.restaurant_menu : Icons.receipt,
+                      color: isTableBooking ? Colors.purple : Colors.orange,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          booking.diningName,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Regular',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Booking ID: ${booking.bookingId.substring(0, 8)}...',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'Regular',
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      status.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: statusColor,
+                        fontFamily: 'Regular',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 16),
+
+              // Details based on booking type
+              if (isTableBooking) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildInfoChip(
+                        Icons.calendar_today,
+                        booking.date ?? 'N/A',
+                        Colors.black12,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildInfoChip(
+                        Icons.access_time,
+                        booking.timeSlot ?? 'N/A',
+                        Colors.black12,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildInfoChip(
+                        Icons.people,
+                        '${booking.numberOfPeople ?? 0} people',
+                        Colors.black12,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildInfoChip(
+                        Icons.schedule,
+                        '${booking.startTime ?? ''} - ${booking.endTime ?? ''}',
+                        Colors.black12,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Advance Paid',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'Regular',
+                      ),
+                    ),
+                    Text(
+                      '₹${booking.advanceAmount ?? 0}',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Regular',
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ] else if (isBillPayment) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.receipt_long, color: Colors.orange.shade700),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Bill Payment',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Regular',
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '₹${booking.billAmount ?? 0}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Regular',
+                          color: Colors.orange.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 12),
+
+              // Booking date
+              Row(
+                children: [
+                  Icon(Icons.schedule, size: 14, color: Colors.grey),
+                  const SizedBox(width: 6),
+                  Text(
+                    _formatDate(createdAt),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontFamily: 'Regular',
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+
+              // Status-specific actions
+              if (booking.isActive && isTableBooking) ...[
+                const SizedBox(height: 12),
+                if (booking.isBookingTimeActive()) ...[
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.check_circle,
+                          size: 16,
+                          color: Colors.green.shade700,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Booking is active now! You can pay your bill.',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontFamily: 'Regular',
+                              color: Colors.green.shade900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else if (booking.isUpcoming()) ...[
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 16,
+                          color: Colors.blue.shade700,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Upcoming booking. You can modify or cancel.',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontFamily: 'Regular',
+                              color: Colors.blue.shade900,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else if (booking.hasBookingTimePassed()) ...[
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.history,
+                          size: 16,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'This booking has ended.',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontFamily: 'Regular',
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildDiningBookingFromBookingId(String bookingId) {
+    return FutureBuilder<QuerySnapshot>(
+      future:
+          FirebaseFirestore.instance
+              .collection('dining_bookings')
+              .where('bookingId', isEqualTo: bookingId)
+              .limit(1)
+              .get(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Padding(
+            padding: EdgeInsets.all(16),
+            child: Container(
+              height: size.safeWidth * 0.6,
+              width: size.safeWidth * 0.9,
+              decoration: BoxDecoration(
+                color: whiteColor,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: LoadingShimmer(
+                width: double.infinity,
+                height: double.infinity,
+                isCircle: false,
+              ),
+            ),
+          );
+        }
+
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const SizedBox();
+        }
+
+        final bookingData =
+            snapshot.data!.docs.first.data() as Map<String, dynamic>;
+        final booking = DiningBooking.fromMap(bookingData);
+
+        return _buildDiningBookingCard(booking);
+      },
+    );
+  }
+
+  void _showDiningBookingDetails(DiningBooking booking) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder:
+          (context) => DraggableScrollableSheet(
+            initialChildSize: 0.7,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            expand: false,
+            builder:
+                (context, scrollController) => SingleChildScrollView(
+                  controller: scrollController,
+                  padding: EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 24),
+                      Text(
+                        'Booking Details',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Regular',
+                        ),
+                      ),
+                      SizedBox(height: 24),
+
+                      _buildDetailRow('Booking ID', booking.bookingId),
+                      _buildDetailRow('Status', booking.status.toUpperCase()),
+                      _buildDetailRow('Restaurant', booking.diningName),
+                      _buildDetailRow(
+                        'Type',
+                        booking.isTableBooking
+                            ? 'Table Booking'
+                            : 'Bill Payment',
+                      ),
+
+                      if (booking.isTableBooking) ...[
+                        SizedBox(height: 16),
+                        Divider(),
+                        SizedBox(height: 16),
+                        Text(
+                          'Table Booking Details',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Regular',
+                          ),
+                        ),
+                        SizedBox(height: 12),
+                        _buildDetailRow('Date', booking.date ?? 'N/A'),
+                        _buildDetailRow('Time Slot', booking.timeSlot ?? 'N/A'),
+                        _buildDetailRow(
+                          'Time',
+                          '${booking.startTime ?? ''} - ${booking.endTime ?? ''}',
+                        ),
+                        _buildDetailRow(
+                          'Number of People',
+                          '${booking.numberOfPeople ?? 0}',
+                        ),
+                        _buildDetailRow(
+                          'Advance Paid',
+                          '₹${booking.advanceAmount ?? 0}',
+                          isBold: true,
+                        ),
+                      ] else if (booking.isBillPayment) ...[
+                        SizedBox(height: 16),
+                        Divider(),
+                        SizedBox(height: 16),
+                        _buildDetailRow(
+                          'Bill Amount',
+                          '₹${booking.billAmount ?? 0}',
+                          isBold: true,
+                        ),
+                      ],
+
+                      if (booking.userDetails != null) ...[
+                        SizedBox(height: 16),
+                        Divider(),
+                        SizedBox(height: 16),
+                        Text(
+                          'Contact Details',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Regular',
+                          ),
+                        ),
+                        SizedBox(height: 12),
+                        _buildDetailRow(
+                          'Name',
+                          booking.userDetails!['name'] ?? 'N/A',
+                        ),
+                        _buildDetailRow(
+                          'Email',
+                          booking.userDetails!['email'] ?? 'N/A',
+                        ),
+                        _buildDetailRow(
+                          'Phone',
+                          booking.userDetails!['phone'] ?? 'N/A',
+                        ),
+                      ],
+
+                      SizedBox(height: 16),
+                      Divider(),
+                      SizedBox(height: 16),
+                      _buildDetailRow(
+                        'Booked On',
+                        _formatDate(booking.createdAt),
+                      ),
+                      if (booking.isCancelled && booking.cancelledAt != null)
+                        _buildDetailRow(
+                          'Cancelled On',
+                          _formatDate(booking.cancelledAt!),
+                        ),
+
+                      SizedBox(height: 24),
+
+                      // Actions based on status
+                      if (booking.isActive && booking.isTableBooking) ...[
+                        if (booking.isUpcoming()) ...[
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                // Navigate to modify/cancel
+                              },
+                              icon: Icon(Icons.edit),
+                              label: Text(
+                                'Modify Booking',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Regular',
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                _showCancelConfirmation(booking);
+                              },
+                              icon: Icon(Icons.cancel),
+                              label: Text(
+                                'Cancel Booking',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Regular',
+                                ),
+                              ),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.red,
+                                side: BorderSide(color: Colors.red),
+                                padding: EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ] else if (booking.isBookingTimeActive()) ...[
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                // Navigate to pay bill
+                              },
+                              icon: Icon(Icons.payment),
+                              label: Text(
+                                'Pay Bill Now',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'Regular',
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ],
+                  ),
+                ),
+          ),
+    );
+  }
+
+  void _showCancelConfirmation(DiningBooking booking) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text(
+              'Cancel Booking?',
+              style: TextStyle(fontFamily: 'Regular'),
+            ),
+            content: Text(
+              'Are you sure you want to cancel this booking? The advance payment of ₹${booking.advanceAmount} is non-refundable.',
+              style: TextStyle(fontFamily: 'Regular'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('No', style: TextStyle(fontFamily: 'Regular')),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  try {
+                    await DiningBookingService().cancelBooking(
+                      booking.bookingId,
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Booking cancelled successfully'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to cancel: ${e.toString()}'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                  Navigator.pop(context);
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: Text(
+                  'Yes, Cancel',
+                  style: TextStyle(fontFamily: 'Regular', color: whiteColor),
+                ),
+              ),
+            ],
+          ),
+    );
+  }
+
+  // Update the _buildBookingsStream method in UserBookingsPage to handle dining
   Widget _buildBookingsStream({String? type}) {
     return StreamBuilder<QuerySnapshot>(
       stream: _userService.getUserBookingsStream(),
       builder: (context, snapshot) {
-        print(snapshot.data.toString());
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
 
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          print(snapshot.error.toString());
           return _buildEmptyState('No bookings yet', Icons.receipt_long);
         }
 
@@ -164,7 +789,7 @@ class _UserBookingsPageState extends State<UserBookingsPage>
                 case 'turf':
                   return buildTurfBookingFromBookingId(booking['bookingId']);
                 case 'dining':
-                  return _buildEventBookingCard(booking); // reuse or custom
+                  return buildDiningBookingFromBookingId(booking['bookingId']);
                 default:
                   return const SizedBox.shrink();
               }
@@ -175,104 +800,159 @@ class _UserBookingsPageState extends State<UserBookingsPage>
     );
   }
 
-  Widget _buildAllBookings() {
-    if (isLoadingEvents || isLoadingTurfs) {
-      return Center(child: CircularProgressIndicator());
-    }
+  // Widget _buildBookingsStream({String? type}) {
+  //   return StreamBuilder<QuerySnapshot>(
+  //     stream: _userService.getUserBookingsStream(),
+  //     builder: (context, snapshot) {
+  //       print(snapshot.data.toString());
+  //       if (snapshot.connectionState == ConnectionState.waiting) {
+  //         return const Center(child: CircularProgressIndicator());
+  //       }
 
-    final allBookings = [...eventBookings, ...turfBookings];
+  //       if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+  //         print(snapshot.error.toString());
+  //         return _buildEmptyState('No bookings yet', Icons.receipt_long);
+  //       }
 
-    if (allBookings.isEmpty) {
-      return _buildEmptyState('No bookings yet', Icons.receipt_long);
-    }
+  //       final bookings =
+  //           snapshot.data!.docs
+  //               .map((doc) => doc.data() as Map<String, dynamic>)
+  //               .where((booking) {
+  //                 if (type == null) return true;
+  //                 return booking['bookingType'] == type;
+  //               })
+  //               .toList();
 
-    // Sort by date (most recent first)
-    allBookings.sort((a, b) {
-      final aDate = a['createdAt'] as Timestamp?;
-      final bDate = b['createdAt'] as Timestamp?;
-      if (aDate == null || bDate == null) return 0;
-      return bDate.compareTo(aDate);
-    });
+  //       if (bookings.isEmpty) {
+  //         return _buildEmptyState(
+  //           'No ${type ?? ''} bookings yet',
+  //           Icons.receipt_long,
+  //         );
+  //       }
 
-    return RefreshIndicator(
-      onRefresh: _loadBookings,
-      child: ListView.builder(
-        padding: EdgeInsets.all(16),
-        itemCount: allBookings.length,
-        itemBuilder: (context, index) {
-          final booking = allBookings[index];
-          final isEvent = booking.containsKey('eventName');
+  //       return RefreshIndicator(
+  //         onRefresh: () async {},
+  //         child: ListView.builder(
+  //           padding: const EdgeInsets.all(16),
+  //           itemCount: bookings.length,
+  //           itemBuilder: (context, index) {
+  //             final booking = bookings[index];
 
-          return isEvent
-              ? _buildEventBookingCard(booking)
-              : _buildTurfBookingCard(booking);
-        },
-      ),
-    );
-  }
+  //             switch (booking['bookingType']) {
+  //               case 'event':
+  //                 return _buildEventBookingCard(booking);
+  //               case 'turf':
+  //                 return buildTurfBookingFromBookingId(booking['bookingId']);
+  //               case 'dining':
+  //                 return _buildEventBookingCard(booking); // reuse or custom
+  //               default:
+  //                 return const SizedBox.shrink();
+  //             }
+  //           },
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
 
-  Widget _buildEventBookings() {
-    if (isLoadingEvents) {
-      return Center(child: CircularProgressIndicator());
-    }
+  // Widget _buildAllBookings() {
+  //   if (isLoadingEvents || isLoadingTurfs) {
+  //     return Center(child: CircularProgressIndicator());
+  //   }
 
-    if (eventBookings.isEmpty) {
-      return _buildEmptyState('No event bookings yet', Icons.event);
-    }
+  //   final allBookings = [...eventBookings, ...turfBookings];
 
-    return RefreshIndicator(
-      onRefresh: _loadBookings,
-      child: ListView.builder(
-        padding: EdgeInsets.all(16),
-        itemCount: eventBookings.length,
-        itemBuilder: (context, index) {
-          return _buildEventBookingCard(eventBookings[index]);
-        },
-      ),
-    );
-  }
+  //   if (allBookings.isEmpty) {
+  //     return _buildEmptyState('No bookings yet', Icons.receipt_long);
+  //   }
 
-  Widget _buildDiningBookings() {
-    if (isLoadingDining) {
-      return Center(child: CircularProgressIndicator());
-    }
+  //   // Sort by date (most recent first)
+  //   allBookings.sort((a, b) {
+  //     final aDate = a['createdAt'] as Timestamp?;
+  //     final bDate = b['createdAt'] as Timestamp?;
+  //     if (aDate == null || bDate == null) return 0;
+  //     return bDate.compareTo(aDate);
+  //   });
 
-    if (diningBookings.isEmpty) {
-      return _buildEmptyState('No dining bookings yet', Icons.event);
-    }
+  //   return RefreshIndicator(
+  //     onRefresh: _loadBookings,
+  //     child: ListView.builder(
+  //       padding: EdgeInsets.all(16),
+  //       itemCount: allBookings.length,
+  //       itemBuilder: (context, index) {
+  //         final booking = allBookings[index];
+  //         final isEvent = booking.containsKey('eventName');
 
-    return RefreshIndicator(
-      onRefresh: _loadBookings,
-      child: ListView.builder(
-        padding: EdgeInsets.all(16),
-        itemCount: diningBookings.length,
-        itemBuilder: (context, index) {
-          return _buildEventBookingCard(diningBookings[index]);
-        },
-      ),
-    );
-  }
+  //         return isEvent
+  //             ? _buildEventBookingCard(booking)
+  //             : _buildTurfBookingCard(booking);
+  //       },
+  //     ),
+  //   );
+  // }
 
-  Widget _buildTurfBookings() {
-    if (isLoadingTurfs) {
-      return Center(child: CircularProgressIndicator());
-    }
+  // Widget _buildEventBookings() {
+  //   if (isLoadingEvents) {
+  //     return Center(child: CircularProgressIndicator());
+  //   }
 
-    if (turfBookings.isEmpty) {
-      return _buildEmptyState('No turf bookings yet', Icons.sports_soccer);
-    }
+  //   if (eventBookings.isEmpty) {
+  //     return _buildEmptyState('No event bookings yet', Icons.event);
+  //   }
 
-    return RefreshIndicator(
-      onRefresh: _loadBookings,
-      child: ListView.builder(
-        padding: EdgeInsets.all(16),
-        itemCount: turfBookings.length,
-        itemBuilder: (context, index) {
-          return _buildTurfBookingCard(turfBookings[index]);
-        },
-      ),
-    );
-  }
+  //   return RefreshIndicator(
+  //     onRefresh: _loadBookings,
+  //     child: ListView.builder(
+  //       padding: EdgeInsets.all(16),
+  //       itemCount: eventBookings.length,
+  //       itemBuilder: (context, index) {
+  //         return _buildEventBookingCard(eventBookings[index]);
+  //       },
+  //     ),
+  //   );
+  // }
+
+  // Widget _buildDiningBookings() {
+  //   if (isLoadingDining) {
+  //     return Center(child: CircularProgressIndicator());
+  //   }
+
+  //   if (diningBookings.isEmpty) {
+  //     return _buildEmptyState('No dining bookings yet', Icons.event);
+  //   }
+
+  //   return RefreshIndicator(
+  //     onRefresh: _loadBookings,
+  //     child: ListView.builder(
+  //       padding: EdgeInsets.all(16),
+  //       itemCount: diningBookings.length,
+  //       itemBuilder: (context, index) {
+  //         return _buildEventBookingCard(diningBookings[index]);
+  //       },
+  //     ),
+  //   );
+  // }
+
+  // Widget _buildTurfBookings() {
+  //   if (isLoadingTurfs) {
+  //     return Center(child: CircularProgressIndicator());
+  //   }
+
+  //   if (turfBookings.isEmpty) {
+  //     return _buildEmptyState('No turf bookings yet', Icons.sports_soccer);
+  //   }
+
+  //   return RefreshIndicator(
+  //     onRefresh: _loadBookings,
+  //     child: ListView.builder(
+  //       padding: EdgeInsets.all(16),
+  //       itemCount: turfBookings.length,
+  //       itemBuilder: (context, index) {
+  //         return _buildTurfBookingCard(turfBookings[index]);
+  //       },
+  //     ),
+  //   );
+  // }
 
   Widget _buildEmptyState(String message, IconData icon) {
     return Center(

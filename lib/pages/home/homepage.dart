@@ -236,7 +236,7 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
             // ),
             Container(
               width: double.infinity,
-              height: kToolbarHeight + size.safeWidth * 0.12,
+              height: kToolbarHeight + size.safeWidth * 0.13,
 
               // height:
               //     _fadeValue() < 0.4

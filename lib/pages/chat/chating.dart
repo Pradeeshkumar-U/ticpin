@@ -39,16 +39,16 @@
 //           Navigator.pushReplacement(
 //             context,
 //             MaterialPageRoute(
-//               builder: (_) => const Chatbot(
-//                 peerId: ADMIN_EMAIL,
-//                 peerName: 'Ticpin',
-//               ),
+//               builder:
+//                   (_) => const Chatbot(peerId: ADMIN_EMAIL, peerName: 'Ticpin'),
 //             ),
 //           );
 //         }
 //       }
 //     } on FirebaseAuthException catch (e) {
-//       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'Login failed')));
+//       ScaffoldMessenger.of(
+//         context,
+//       ).showSnackBar(SnackBar(content: Text(e.message ?? 'Login failed')));
 //     }
 //   }
 
@@ -85,7 +85,12 @@
 //   final String peerName;
 //   final bool canSend;
 
-//   const Chatbot({super.key, required this.peerId, required this.peerName, this.canSend = true});
+//   const Chatbot({
+//     super.key,
+//     required this.peerId,
+//     required this.peerName,
+//     this.canSend = true,
+//   });
 
 //   @override
 //   State<Chatbot> createState() => _ChatbotState();
@@ -115,7 +120,9 @@
 //   String? myId() {
 //     final user = FirebaseAuth.instance.currentUser;
 //     if (user == null) return null;
-//     return (user.email != null && user.email!.isNotEmpty) ? user.email! : user.uid;
+//     return (user.email != null && user.email!.isNotEmpty)
+//         ? user.email!
+//         : user.uid;
 //   }
 
 //   Future<void> _initChat() async {
@@ -159,13 +166,17 @@
 
 //     final chatRef = FirebaseFirestore.instance.collection('chats').doc(chatId);
 //     await chatRef.collection('messages').add(msgData);
-//     await chatRef.update({'lastMsg': v.trim(), 'lastUpdated': FieldValue.serverTimestamp()});
+//     await chatRef.update({
+//       'lastMsg': v.trim(),
+//       'lastUpdated': FieldValue.serverTimestamp(),
+//     });
 //     _con.clear();
 //     setState(() => inpmsg = '');
 
 //     // Send push notification via PushService (client-side helper).
 //     try {
-//       PushService.serverKey = PushService.serverKey; // keep placeholder if not set
+//       PushService.serverKey =
+//           PushService.serverKey; // keep placeholder if not set
 //       PushService.sendNotification(
 //         to: widget.peerId,
 //         title: 'New message from $id',
@@ -180,13 +191,24 @@
 //   // Push sending is handled by `PushService` in `lib/push_service.dart`.
 
 //   Future<void> markSeen(String msgId) async {
-//     final msgRef = FirebaseFirestore.instance.collection('chats').doc(chatId).collection('messages').doc(msgId);
+//     final msgRef = FirebaseFirestore.instance
+//         .collection('chats')
+//         .doc(chatId)
+//         .collection('messages')
+//         .doc(msgId);
 //     await msgRef.update({'seen': true, 'seenAt': FieldValue.serverTimestamp()});
 //   }
 
 //   Future<void> markDelivered(String msgId) async {
-//     final msgRef = FirebaseFirestore.instance.collection('chats').doc(chatId).collection('messages').doc(msgId);
-//     await msgRef.update({'deliver': true, 'deliverTime': FieldValue.serverTimestamp()});
+//     final msgRef = FirebaseFirestore.instance
+//         .collection('chats')
+//         .doc(chatId)
+//         .collection('messages')
+//         .doc(msgId);
+//     await msgRef.update({
+//       'deliver': true,
+//       'deliverTime': FieldValue.serverTimestamp(),
+//     });
 //   }
 
 //   Widget input(double hei, double fs) {
@@ -195,10 +217,10 @@
 //       padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 10),
 //       child: Container(
 //         decoration: BoxDecoration(
-//           color: Colors.white, 
+//           color: Colors.white,
 //           borderRadius: BorderRadius.all(Radius.circular(30)),
 //           border: Border.all(color: dark_blue),
-//           ),
+//         ),
 //         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
 //         child: Row(
 //           crossAxisAlignment: CrossAxisAlignment.end,
@@ -216,7 +238,9 @@
 //             // Message input area (constrained, TextField handles internal scrolling)
 //             Expanded(
 //               child: ConstrainedBox(
-//                 constraints: const BoxConstraints(maxHeight: 120), // approx 4 lines
+//                 constraints: const BoxConstraints(
+//                   maxHeight: 120,
+//                 ), // approx 4 lines
 //                 child: TextField(
 //                   controller: _con,
 //                   scrollController: _inputScroll,
@@ -228,7 +252,10 @@
 //                   decoration: InputDecoration(
 //                     hintText: 'Message...',
 //                     isDense: true,
-//                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+//                     contentPadding: const EdgeInsets.symmetric(
+//                       horizontal: 12,
+//                       vertical: 10,
+//                     ),
 //                     border: InputBorder.none,
 //                   ),
 //                 ),
@@ -237,10 +264,18 @@
 
 //             // Send button anchored bottom-right
 //             Padding(
-//               padding: const EdgeInsets.only(left: 6.0, right: 6.0, bottom: 3.0),
+//               padding: const EdgeInsets.only(
+//                 left: 6.0,
+//                 right: 6.0,
+//                 bottom: 3.0,
+//               ),
 //               child: InkWell(
 //                 onTap: () => sendMessage(inpmsg),
-//                 child: CircleAvatar(backgroundColor: main_blue, radius: 20, child: const Icon(Icons.send, color: Colors.white70)),
+//                 child: CircleAvatar(
+//                   backgroundColor: main_blue,
+//                   radius: 20,
+//                   child: const Icon(Icons.send, color: Colors.white70),
+//                 ),
 //               ),
 //             ),
 //           ],
@@ -262,10 +297,25 @@
 //       resizeToAvoidBottomInset: true,
 //       appBar: AppBar(
 //         centerTitle: true,
-//         title: Text(widget.peerName, style: const TextStyle(color: Colors.white)),
+//         title: Text(
+//           widget.peerName,
+//           style: const TextStyle(color: Colors.white),
+//         ),
 //         backgroundColor: main_blue,
-//         leading: IconButton(onPressed: () => Navigator.pop(context), icon: const CircleAvatar(radius: 13, backgroundColor: Colors.white60, child: Icon(Icons.arrow_back, size: 15))),
-//         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.only(bottomLeft: Radius.circular(10), bottomRight: Radius.circular(10))),
+//         leading: IconButton(
+//           onPressed: () => Navigator.pop(context),
+//           icon: const CircleAvatar(
+//             radius: 13,
+//             backgroundColor: Colors.white60,
+//             child: Icon(Icons.arrow_back, size: 15),
+//           ),
+//         ),
+//         shape: const RoundedRectangleBorder(
+//           borderRadius: BorderRadius.only(
+//             bottomLeft: Radius.circular(10),
+//             bottomRight: Radius.circular(10),
+//           ),
+//         ),
 //       ),
 //       body: Container(
 //         constraints: const BoxConstraints(maxWidth: 500, minWidth: 300),
@@ -273,122 +323,218 @@
 //         child: Column(
 //           children: [
 //             Expanded(
-//               child: chatId.isEmpty
-//                   ? const Center(child: CircularProgressIndicator())
-//                   : StreamBuilder<QuerySnapshot>(
-//                       stream: FirebaseFirestore.instance.collection('chats').doc(chatId).collection('messages').orderBy('createdAt', descending: false).limit(msgLimit).snapshots(),
-//                       builder: (context, snap) {
-//                         if (!snap.hasData) return const Center(child: CircularProgressIndicator());
-//                         final docs = snap.data!.docs;
-//                         if (docs.isEmpty) return const Center(child: Text('No messages yet'));
-//                         return ListView.builder(
-//                           controller: _sco,
-//                           reverse: true,
-//                           itemCount: docs.length,
-//                           itemBuilder: (context, ind) {
-//                             final revind = docs.length - 1 - ind;
-//                             final data = docs[revind].data() as Map<String, dynamic>;
-//                             final fromUser = data['from'] == myId();
+//               child:
+//                   chatId.isEmpty
+//                       ? const Center(child: CircularProgressIndicator())
+//                       : StreamBuilder<QuerySnapshot>(
+//                         stream:
+//                             FirebaseFirestore.instance
+//                                 .collection('chats')
+//                                 .doc(chatId)
+//                                 .collection('messages')
+//                                 .orderBy('createdAt', descending: false)
+//                                 .limit(msgLimit)
+//                                 .snapshots(),
+//                         builder: (context, snap) {
+//                           if (!snap.hasData)
+//                             return const Center(
+//                               child: CircularProgressIndicator(),
+//                             );
+//                           final docs = snap.data!.docs;
+//                           if (docs.isEmpty)
+//                             return const Center(child: Text('No messages yet'));
+//                           return ListView.builder(
+//                             controller: _sco,
+//                             reverse: true,
+//                             itemCount: docs.length,
+//                             itemBuilder: (context, ind) {
+//                               final revind = docs.length - 1 - ind;
+//                               final data =
+//                                   docs[revind].data() as Map<String, dynamic>;
+//                               final fromUser = data['from'] == myId();
 
-//                             // If this message is incoming and not yet marked delivered, mark it delivered
-//                             if (!fromUser && !(data['deliver'] ?? false) && (data['to'] == myId())) {
-//                               markDelivered(docs[revind].id);
-//                             }
-
-//                             // Mark as seen (read) when this client renders an incoming message that's not seen
-//                             if (!fromUser && !(data['seen'] ?? false)) markSeen(docs[revind].id);
-
-//                             // Determine whether to show a date divider above this message
-//                             bool showDateDivider = false;
-//                             DateTime? currDt;
-//                             if (data['createdAt'] != null && data['createdAt'] is Timestamp) {
-//                               currDt = (data['createdAt'] as Timestamp).toDate();
-//                             }
-//                             DateTime? prevDt;
-//                             if (revind > 0) {
-//                               final prevData = docs[revind - 1].data() as Map<String, dynamic>?;
-//                               if (prevData != null && prevData['createdAt'] != null && prevData['createdAt'] is Timestamp) {
-//                                 prevDt = (prevData['createdAt'] as Timestamp).toDate();
+//                               // If this message is incoming and not yet marked delivered, mark it delivered
+//                               if (!fromUser &&
+//                                   !(data['deliver'] ?? false) &&
+//                                   (data['to'] == myId())) {
+//                                 markDelivered(docs[revind].id);
 //                               }
-//                             }
 
-//                             bool sameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
+//                               // Mark as seen (read) when this client renders an incoming message that's not seen
+//                               if (!fromUser && !(data['seen'] ?? false))
+//                                 markSeen(docs[revind].id);
 
-//                             if (currDt != null) {
-//                               if (prevDt == null) {
-//                                 showDateDivider = true;
-//                               } else if (!sameDay(currDt, prevDt)) {
-//                                 showDateDivider = true;
+//                               // Determine whether to show a date divider above this message
+//                               bool showDateDivider = false;
+//                               DateTime? currDt;
+//                               if (data['createdAt'] != null &&
+//                                   data['createdAt'] is Timestamp) {
+//                                 currDt =
+//                                     (data['createdAt'] as Timestamp).toDate();
 //                               }
-//                             }
+//                               DateTime? prevDt;
+//                               if (revind > 0) {
+//                                 final prevData =
+//                                     docs[revind - 1].data()
+//                                         as Map<String, dynamic>?;
+//                                 if (prevData != null &&
+//                                     prevData['createdAt'] != null &&
+//                                     prevData['createdAt'] is Timestamp) {
+//                                   prevDt =
+//                                       (prevData['createdAt'] as Timestamp)
+//                                           .toDate();
+//                                 }
+//                               }
 
-//                             Widget dateDivider() {
-//                               final txt = currDt != null ? DateFormat('dd MMM yyyy').format(currDt) : '';
-//                               return Padding(
-//                                 padding: const EdgeInsets.symmetric(vertical: 8.0),
-//                                 child: Center(
+//                               bool sameDay(DateTime a, DateTime b) =>
+//                                   a.year == b.year &&
+//                                   a.month == b.month &&
+//                                   a.day == b.day;
+
+//                               if (currDt != null) {
+//                                 if (prevDt == null) {
+//                                   showDateDivider = true;
+//                                 } else if (!sameDay(currDt, prevDt)) {
+//                                   showDateDivider = true;
+//                                 }
+//                               }
+
+//                               Widget dateDivider() {
+//                                 final txt =
+//                                     currDt != null
+//                                         ? DateFormat(
+//                                           'dd MMM yyyy',
+//                                         ).format(currDt)
+//                                         : '';
+//                                 return Padding(
+//                                   padding: const EdgeInsets.symmetric(
+//                                     vertical: 8.0,
+//                                   ),
+//                                   child: Center(
+//                                     child: Column(
+//                                       children: [
+//                                         Container(
+//                                           padding: const EdgeInsets.symmetric(
+//                                             horizontal: 12,
+//                                             vertical: 6,
+//                                           ),
+//                                           decoration: BoxDecoration(
+//                                             color: blue_grad.withAlpha(100),
+//                                             borderRadius: BorderRadius.circular(
+//                                               20,
+//                                             ),
+//                                           ),
+//                                           child: Text(
+//                                             txt,
+//                                             style: const TextStyle(
+//                                               color: Colors.white,
+//                                               fontSize: 12,
+//                                             ),
+//                                           ),
+//                                         ),
+//                                       ],
+//                                     ),
+//                                   ),
+//                                 );
+//                               }
+
+//                               return Align(
+//                                 alignment:
+//                                     fromUser
+//                                         ? Alignment.centerRight
+//                                         : Alignment.centerLeft,
+//                                 child: Padding(
+//                                   padding: const EdgeInsets.all(8.0),
 //                                   child: Column(
+//                                     crossAxisAlignment:
+//                                         fromUser
+//                                             ? CrossAxisAlignment.end
+//                                             : CrossAxisAlignment.start,
 //                                     children: [
+//                                       if (showDateDivider) dateDivider(),
 //                                       Container(
-//                                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-//                                         decoration: BoxDecoration(color: blue_grad.withAlpha(100), borderRadius: BorderRadius.circular(20)),
-//                                         child: Text(txt, style: const TextStyle(color: Colors.white, fontSize: 12)),
+//                                         constraints: BoxConstraints(
+//                                           maxWidth: wid * 0.7,
+//                                         ),
+//                                         decoration: BoxDecoration(
+//                                           color:
+//                                               fromUser
+//                                                   ? main_blue.withAlpha(200)
+//                                                   : Colors.grey[300],
+//                                           borderRadius: BorderRadius.only(
+//                                             topLeft: Radius.circular(20),
+//                                             topRight: Radius.circular(20),
+//                                             bottomLeft:
+//                                                 fromUser
+//                                                     ? Radius.zero
+//                                                     : const Radius.circular(20),
+//                                             bottomRight:
+//                                                 fromUser
+//                                                     ? const Radius.circular(20)
+//                                                     : Radius.zero,
+//                                           ),
+//                                           border: Border.all(
+//                                             color: Colors.black12,
+//                                           ),
+//                                         ),
+//                                         padding: const EdgeInsets.symmetric(
+//                                           horizontal: 12.0,
+//                                           vertical: 8.0,
+//                                         ),
+//                                         child: Text(
+//                                           data['text'] ?? '',
+//                                           style: TextStyle(
+//                                             fontSize: fs * 0.14,
+//                                             fontWeight: FontWeight.w500,
+//                                             color:
+//                                                 fromUser
+//                                                     ? Colors.white
+//                                                     : Colors.black87,
+//                                           ),
+//                                         ),
+//                                       ),
+//                                       Row(
+//                                         mainAxisSize: MainAxisSize.min,
+//                                         children: [
+//                                           Text(
+//                                             data['createdAt'] != null
+//                                                 ? tim(
+//                                                   (data['createdAt']
+//                                                           as Timestamp)
+//                                                       .toDate(),
+//                                                 )
+//                                                 : '',
+//                                             style: TextStyle(
+//                                               fontSize: fs * 0.1,
+//                                             ),
+//                                           ),
+//                                           const SizedBox(width: 6),
+//                                           if (fromUser)
+//                                             // Show single tick (sent), double gray ticks (delivered), or double blue ticks (seen)
+//                                             Icon(
+//                                               data['seen'] == true
+//                                                   ? Icons.done_all
+//                                                   : (data['deliver'] == true
+//                                                       ? Icons.done_all
+//                                                       : Icons.done),
+//                                               size: 16,
+//                                               color:
+//                                                   data['seen'] == true
+//                                                       ? Colors.blue
+//                                                       : (data['deliver'] == true
+//                                                           ? Colors.black54
+//                                                           : Colors.black54),
+//                                             ),
+//                                         ],
 //                                       ),
 //                                     ],
 //                                   ),
 //                                 ),
 //                               );
-//                             }
-
-//                             return Align(
-//                               alignment: fromUser ? Alignment.centerRight : Alignment.centerLeft,
-//                               child: Padding(
-//                                 padding: const EdgeInsets.all(8.0),
-//                                 child: Column(
-//                                   crossAxisAlignment: fromUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-//                                   children: [
-//                                     if (showDateDivider) dateDivider(),
-//                                     Container(
-//                                       constraints: BoxConstraints(maxWidth: wid * 0.7),
-//                                       decoration: BoxDecoration(
-//                                         color: fromUser ? main_blue.withAlpha(200) : Colors.grey[300],
-//                                         borderRadius: BorderRadius.only(
-//                                           topLeft:  Radius.circular(20),
-//                                           topRight:  Radius.circular(20),
-//                                           bottomLeft: fromUser ? Radius.zero : const Radius.circular(20),
-//                                           bottomRight: fromUser ? const Radius.circular(20) : Radius.zero,
-//                                         ),
-//                                         border: Border.all(color: Colors.black12),
-//                                       ),
-//                                       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-//                                       child: Text(data['text'] ?? '', style: TextStyle(fontSize: fs * 0.14, fontWeight: FontWeight.w500, color: fromUser ? Colors.white : Colors.black87)),
-//                                     ),
-//                                     Row(
-//                                       mainAxisSize: MainAxisSize.min,
-//                                       children: [
-//                                         Text(data['createdAt'] != null ? tim((data['createdAt'] as Timestamp).toDate()) : '', style: TextStyle(fontSize: fs * 0.1)),
-//                                         const SizedBox(width: 6),
-//                                         if (fromUser)
-//                                           // Show single tick (sent), double gray ticks (delivered), or double blue ticks (seen)
-//                                           Icon(
-//                                             data['seen'] == true
-//                                                 ? Icons.done_all
-//                                                 : (data['deliver'] == true ? Icons.done_all : Icons.done),
-//                                             size: 16,
-//                                             color: data['seen'] == true
-//                                                 ? Colors.blue
-//                                                 : (data['deliver'] == true ? Colors.black54 : Colors.black54),
-//                                           ),
-//                                       ],
-//                                     ),
-//                                   ],
-//                                 ),
-//                               ),
-//                             );
-//                           },
-//                         );
-//                       },
-//                     ),
+//                             },
+//                           );
+//                         },
+//                       ),
 //             ),
 //             SafeArea(child: widget.canSend ? input(hei, fs) : const SizedBox()),
 //           ],
@@ -437,18 +583,20 @@
 //             .limit(1)
 //             .get();
 //         // success => primary query works
-//         if (mounted) setState(() {
-//           useFallback = false;
-//           _checked = true;
-//         });
+//         if (mounted)
+//           setState(() {
+//             useFallback = false;
+//             _checked = true;
+//           });
 //         return;
 //       } catch (e) {
 //         attempts++;
 //         if (attempts > _maxRetries) {
-//           if (mounted) setState(() {
-//             useFallback = true;
-//             _checked = true;
-//           });
+//           if (mounted)
+//             setState(() {
+//               useFallback = true;
+//               _checked = true;
+//             });
 //           return;
 //         }
 //         // // small backoff
@@ -456,6 +604,7 @@
 //       }
 //     }
 //   }
+
 //   Widget build(BuildContext context) {
 //     // Show init-time loader until probe completes so retries happen during init
 //     if (!_checked) {
@@ -463,28 +612,63 @@
 //         backgroundColor: const Color.fromRGBO(211, 201, 255, 0.95),
 //         appBar: AppBar(
 //           centerTitle: true,
-//           title: Text("Admin Inbox", style: const TextStyle(color: Colors.white)),
+//           title: Text(
+//             "Admin Inbox",
+//             style: const TextStyle(color: Colors.white),
+//           ),
 //           backgroundColor: main_blue,
-//           leading: IconButton(onPressed: () => Navigator.pop(context), icon: const CircleAvatar(radius: 13, backgroundColor: Colors.white60, child: Icon(Icons.arrow_back, size: 15))),
-//           shape: const RoundedRectangleBorder(borderRadius: BorderRadius.only(bottomLeft: Radius.circular(10), bottomRight: Radius.circular(10))),
+//           leading: IconButton(
+//             onPressed: () => Navigator.pop(context),
+//             icon: const CircleAvatar(
+//               radius: 13,
+//               backgroundColor: Colors.white60,
+//               child: Icon(Icons.arrow_back, size: 15),
+//             ),
+//           ),
+//           shape: const RoundedRectangleBorder(
+//             borderRadius: BorderRadius.only(
+//               bottomLeft: Radius.circular(10),
+//               bottomRight: Radius.circular(10),
+//             ),
+//           ),
 //         ),
 //         body: const Center(child: CircularProgressIndicator()),
 //       );
 //     }
 
 //     // Primary query: use boolean `hasAdmin` to avoid requiring composite index
-//     final Stream<QuerySnapshot> stream = useFallback
-//       ? FirebaseFirestore.instance.collection('chats').where('members', arrayContains: adminId).snapshots()
-//       : FirebaseFirestore.instance.collection('chats').where('hasAdmin', isEqualTo: true).orderBy('lastUpdated', descending: true).snapshots();
+//     final Stream<QuerySnapshot> stream =
+//         useFallback
+//             ? FirebaseFirestore.instance
+//                 .collection('chats')
+//                 .where('members', arrayContains: adminId)
+//                 .snapshots()
+//             : FirebaseFirestore.instance
+//                 .collection('chats')
+//                 .where('hasAdmin', isEqualTo: true)
+//                 .orderBy('lastUpdated', descending: true)
+//                 .snapshots();
 
 //     return Scaffold(
 //       backgroundColor: const Color.fromRGBO(211, 201, 255, 0.95),
-//       appBar:AppBar(
+//       appBar: AppBar(
 //         centerTitle: true,
 //         title: Text("Admin Inbox", style: const TextStyle(color: Colors.white)),
 //         backgroundColor: main_blue,
-//         leading: IconButton(onPressed: () => Navigator.pop(context), icon: const CircleAvatar(radius: 13, backgroundColor: Colors.white60, child: Icon(Icons.arrow_back, size: 15))),
-//         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.only(bottomLeft: Radius.circular(10), bottomRight: Radius.circular(10))),
+//         leading: IconButton(
+//           onPressed: () => Navigator.pop(context),
+//           icon: const CircleAvatar(
+//             radius: 13,
+//             backgroundColor: Colors.white60,
+//             child: Icon(Icons.arrow_back, size: 15),
+//           ),
+//         ),
+//         shape: const RoundedRectangleBorder(
+//           borderRadius: BorderRadius.only(
+//             bottomLeft: Radius.circular(10),
+//             bottomRight: Radius.circular(10),
+//           ),
+//         ),
 //       ),
 //       body: StreamBuilder<QuerySnapshot>(
 //         stream: stream,
@@ -497,7 +681,8 @@
 //             return const Center(child: CircularProgressIndicator());
 //           }
 
-//           if (!snap.hasData) return const Center(child: CircularProgressIndicator());
+//           if (!snap.hasData)
+//             return const Center(child: CircularProgressIndicator());
 
 //           var docs = snap.data!.docs;
 //           if (useFallback) {
@@ -505,8 +690,14 @@
 //             docs.sort((a, b) {
 //               final aMap = a.data() as Map<String, dynamic>? ?? {};
 //               final bMap = b.data() as Map<String, dynamic>? ?? {};
-//               final aTs = aMap['lastUpdated'] is Timestamp ? (aMap['lastUpdated'] as Timestamp).toDate() : null;
-//               final bTs = bMap['lastUpdated'] is Timestamp ? (bMap['lastUpdated'] as Timestamp).toDate() : null;
+//               final aTs =
+//                   aMap['lastUpdated'] is Timestamp
+//                       ? (aMap['lastUpdated'] as Timestamp).toDate()
+//                       : null;
+//               final bTs =
+//                   bMap['lastUpdated'] is Timestamp
+//                       ? (bMap['lastUpdated'] as Timestamp).toDate()
+//                       : null;
 //               if (aTs == null && bTs == null) return 0;
 //               if (aTs == null) return 1;
 //               if (bTs == null) return -1;
@@ -520,14 +711,42 @@
 //             itemBuilder: (context, i) {
 //               final data = docs[i].data() as Map<String, dynamic>;
 //               final members = List<String>.from(data['members'] ?? []);
-//               final other = members.firstWhere((m) => m != adminId, orElse: () => 'Unknown');
+//               final other = members.firstWhere(
+//                 (m) => m != adminId,
+//                 orElse: () => 'Unknown',
+//               );
 //               return ListTile(
-//                 title: Text(other , style: TextStyle(color: dark_blue) , overflow: TextOverflow.ellipsis,),
-//                 leading: Text((i+1).toString(),style : TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: blue_grad),),
-//                 subtitle: Text(data['lastMsg'] ?? '' , style: TextStyle(color: blue_grad),overflow: TextOverflow.ellipsis,),
+//                 title: Text(
+//                   other,
+//                   style: TextStyle(color: dark_blue),
+//                   overflow: TextOverflow.ellipsis,
+//                 ),
+//                 leading: Text(
+//                   (i + 1).toString(),
+//                   style: TextStyle(
+//                     fontWeight: FontWeight.bold,
+//                     fontSize: 16,
+//                     color: blue_grad,
+//                   ),
+//                 ),
+//                 subtitle: Text(
+//                   data['lastMsg'] ?? '',
+//                   style: TextStyle(color: blue_grad),
+//                   overflow: TextOverflow.ellipsis,
+//                 ),
 //                 trailing: Text(fmt(data['lastUpdated'] as Timestamp?)),
 //                 onTap: () {
-//                   Navigator.push(context, MaterialPageRoute(builder: (_) => Chatbot(peerId: other, peerName: other, canSend: true)));
+//                   Navigator.push(
+//                     context,
+//                     MaterialPageRoute(
+//                       builder:
+//                           (_) => Chatbot(
+//                             peerId: other,
+//                             peerName: other,
+//                             canSend: true,
+//                           ),
+//                     ),
+//                   );
 //                 },
 //               );
 //             },

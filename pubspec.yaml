@@ -4,7 +4,7 @@ description: "" # update here to make text available while sharing
 publish_to: 'none' 
 
 
-version: 1.0.1+2 # update this version before uploading to play store
+version: 1.0.1+3 # update this version before uploading to play store
 
 environment:
   sdk: ^3.7.2
@@ -50,6 +50,7 @@ dependencies:
   cached_network_image: ^3.4.1
   firebase_app_check: ^0.4.1+3
   image_picker: ^1.2.1
+  pin_code_fields: ^8.0.1
 
 
 dev_dependencies:

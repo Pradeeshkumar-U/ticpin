@@ -1278,6 +1278,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:ticpin/constants/colors.dart';
 import 'package:ticpin/constants/models/user/user.dart';
 import 'package:ticpin/constants/shapes/ticbutton.dart';
@@ -1285,6 +1286,8 @@ import 'package:ticpin/constants/shimmer.dart';
 import 'package:ticpin/constants/size.dart';
 import 'package:ticpin/constants/temporary.dart';
 import 'package:ticpin/pages/view/dining/billpaypage.dart';
+import 'package:ticpin/pages/view/dining/diningservice.dart';
+import 'package:ticpin/pages/view/dining/tablebookingpage.dart';
 import 'package:ticpin/services/controllers/dining_controller.dart';
 import 'package:ticpin/constants/models/dining/diningfull.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -1678,7 +1681,7 @@ class _RestaurentpageState extends State<Restaurentpage>
                   children: [
                     InkWell(
                       onTap: () {
-                        Get.to(DiningBillpage());
+                        Get.to(DiningBillPaymentPage(diningId: diningData!.id,diningData: diningData!.raw,));
                       },
                       child: Container(
                         width: size.safeWidth * 0.9,
@@ -2566,72 +2569,584 @@ class _RestaurentpageState extends State<Restaurentpage>
               ],
             ),
           ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              width: size.safeWidth,
-              padding: EdgeInsets.only(top: 10, bottom: 18),
-              color: Colors.white,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  InkWell(
-                    onTap: () {
-                      filter_window(size);
-                    },
-                    child: Container(
-                      width: size.safeWidth * 0.45,
-                      height: size.safeWidth * 0.12,
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withAlpha(60),
-                        borderRadius: BorderRadius.circular(13),
-                      ),
-                      child: Center(
-                        child: Text(
-                          "Book a Table",
-                          style: TextStyle(
-                            fontFamily: 'Regular',
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black,
-                          ),
-                        ),
+          // Positioned(
+          //   left: 0,
+          //   right: 0,
+          //   bottom: 0,
+          //   child: Container(
+          //     width: size.safeWidth,
+          //     padding: EdgeInsets.only(top: 10, bottom: 18),
+          //     color: Colors.white,
+          //     child: Row(
+          //       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          //       children: [
+          //         InkWell(
+          //           onTap: () {
+          //             filter_window(size);
+          //           },
+          //           child: Container(
+          //             width: size.safeWidth * 0.45,
+          //             height: size.safeWidth * 0.12,
+          //             padding: EdgeInsets.symmetric(vertical: 8),
+          //             decoration: BoxDecoration(
+          //               color: Colors.black.withAlpha(60),
+          //               borderRadius: BorderRadius.circular(13),
+          //             ),
+          //             child: Center(
+          //               child: Text(
+          //                 "Book a Table",
+          //                 style: TextStyle(
+          //                   fontFamily: 'Regular',
+          //                   fontWeight: FontWeight.w600,
+          //                   color: Colors.black,
+          //                 ),
+          //               ),
+          //             ),
+          //           ),
+          //         ),
+          //         InkWell(
+          //           onTap: () {
+          //             Get.to(DiningBillpage());
+          //           },
+          //           child: Container(
+          //             width: size.safeWidth * 0.45,
+          //             height: size.safeWidth * 0.12,
+          //             padding: EdgeInsets.symmetric(vertical: 8),
+          //             decoration: BoxDecoration(
+          //               color: Colors.black,
+          //               borderRadius: BorderRadius.circular(13),
+          //             ),
+          //             child: Center(
+          //               child: Text(
+          //                 "Pay Bill",
+          //                 style: TextStyle(
+          //                   fontFamily: 'Regular',
+          //                   fontWeight: FontWeight.w600,
+          //                   color: Colors.white,
+          //                 ),
+          //               ),
+          //             ),
+          //           ),
+          //         ),
+          //       ],
+          //     ),
+          //   ),
+          // ),
+          
+Positioned(
+  left: 0,
+  right: 0,
+  bottom: 0,
+  child: StreamBuilder<List<DiningBooking>>(
+    stream: DiningBookingService().getUserDiningBookings(),
+    builder: (context, snapshot) {
+      // Find active table booking for today
+      DiningBooking? activeBooking;
+      
+      if (snapshot.hasData) {
+        final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+        activeBooking = snapshot.data!.firstWhereOrNull(
+          (booking) =>
+              booking.diningId == widget.diningId &&
+              booking.isTableBooking &&
+              booking.isActive &&
+              booking.date == today,
+        );
+      }
+
+      // Determine which buttons to show
+      final bool showPayBill = activeBooking != null && 
+          activeBooking.isBookingTimeActive();
+      final bool showModifyCancel = activeBooking != null && 
+          activeBooking.isUpcoming();
+      final bool showNormalButtons = activeBooking == null || 
+          activeBooking.hasBookingTimePassed();
+
+      return Container(
+        width: size.safeWidth,
+        padding: EdgeInsets.only(top: 10, bottom: 18),
+        color: Colors.white,
+        child: _buildBottomButtons(
+          showPayBill: showPayBill,
+          showModifyCancel: showModifyCancel,
+          showNormalButtons: showNormalButtons,
+          activeBooking: activeBooking,
+        ),
+      );
+    },
+  ),
+),
+        ],
+      ),
+    );
+  }
+  
+Widget _buildBottomButtons({
+  required bool showPayBill,
+  required bool showModifyCancel,
+  required bool showNormalButtons,
+  DiningBooking? activeBooking,
+}) {
+  if (showPayBill) {
+    // During booking time - show only Pay Bill
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildActionButton(
+          label: 'Pay Bill',
+          color: Colors.black,
+          width: size.safeWidth * 0.9,
+          onTap: () {
+            Get.to(() => DiningBillPaymentPage(
+              diningId: widget.diningId,
+              diningData: diningData!.toMap(),
+            ));
+          },
+        ),
+      ],
+    );
+  } else if (showModifyCancel) {
+    // Before booking time - show modify and cancel options
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          margin: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          padding: EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: gradient1.withAlpha(50),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: gradient1),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, color: gradient1, size: 20),
+              SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Table Booked',
+                      style: TextStyle(
+                        fontFamily: 'Regular',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
                       ),
                     ),
-                  ),
-                  InkWell(
-                    onTap: () {
-                      Get.to(DiningBillpage());
-                    },
-                    child: Container(
-                      width: size.safeWidth * 0.45,
-                      height: size.safeWidth * 0.12,
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.circular(13),
-                      ),
-                      child: Center(
-                        child: Text(
-                          "Pay Bill",
-                          style: TextStyle(
-                            fontFamily: 'Regular',
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
+                    Text(
+                      '${activeBooking!.startTime} - ${activeBooking.endTime} • ${activeBooking.numberOfPeople} people',
+                      style: TextStyle(
+                        fontFamily: 'Regular',
+                        fontSize: 12,
+                        color: Colors.grey.shade700,
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+            ],
+          ),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildActionButton(
+              label: 'Modify',
+              color: Colors.blue,
+              width: size.safeWidth * 0.43,
+              onTap: () => _showModifyDialog(activeBooking),
+            ),
+            _buildActionButton(
+              label: 'Cancel',
+              color: Colors.red.shade600,
+              width: size.safeWidth * 0.43,
+              onTap: () => _showCancelDialog(activeBooking),
+            ),
+          ],
+        ),
+      ],
+    );
+  } else if (showNormalButtons) {
+    // Normal state - show Book Table and Pay Bill
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildActionButton(
+          label: 'Book a Table',
+          color: Colors.black.withAlpha(60),
+          width: size.safeWidth * 0.45,
+          onTap: () {
+            Get.to(() => DiningTableBookingPage(
+              diningId: widget.diningId,
+              diningData: diningData!.toMap(),
+            ));
+          },
+        ),
+        _buildActionButton(
+          label: 'Pay Bill',
+          color: Colors.black,
+          width: size.safeWidth * 0.45,
+          onTap: () {
+            Get.to(() => DiningBillPaymentPage(
+              diningId: widget.diningId,
+              diningData: diningData!.toMap(),
+            ));
+          },
+        ),
+      ],
+    );
+  }
+
+  return SizedBox.shrink();
+}
+
+Widget _buildActionButton({
+  required String label,
+  required Color color,
+  required double width,
+  required VoidCallback onTap,
+}) {
+  return InkWell(
+    onTap: onTap,
+    child: Container(
+      width: width,
+      height: size.safeWidth * 0.12,
+      padding: EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: Center(
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Regular',
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+void _showModifyDialog(DiningBooking booking) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) => DraggableScrollableSheet(
+      initialChildSize: 0.5,
+      minChildSize: 0.3,
+      maxChildSize: 0.9,
+      expand: false,
+      builder: (context, scrollController) => SingleChildScrollView(
+        controller: scrollController,
+        padding: EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            SizedBox(height: 24),
+            Text(
+              'Modify Booking',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Regular',
+              ),
+            ),
+            SizedBox(height: 24),
+            
+            ListTile(
+              leading: Icon(Icons.people, color: gradient1),
+              title: Text(
+                'Change Number of People',
+                style: TextStyle(fontFamily: 'Regular'),
+              ),
+              subtitle: Text(
+                'Current: ${booking.numberOfPeople} people',
+                style: TextStyle(fontFamily: 'Regular', fontSize: 12),
+              ),
+              trailing: Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.pop(context);
+                _showModifyPeopleDialog(booking);
+              },
+            ),
+            Divider(),
+            ListTile(
+              leading: Icon(Icons.access_time, color: gradient1),
+              title: Text(
+                'Change Time Slot',
+                style: TextStyle(fontFamily: 'Regular'),
+              ),
+              subtitle: Text(
+                'Current: ${booking.startTime} - ${booking.endTime}',
+                style: TextStyle(fontFamily: 'Regular', fontSize: 12),
+              ),
+              trailing: Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.pop(context);
+                Get.to(() => DiningTableBookingPage(
+                  diningId: widget.diningId,
+                  diningData: diningData!.toMap(),
+                ));
+              },
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+void _showModifyPeopleDialog(DiningBooking booking) {
+  int newPeople = booking.numberOfPeople ?? 1;
+  
+  showDialog(
+    context: context,
+    builder: (context) => StatefulBuilder(
+      builder: (context, setState) => AlertDialog(
+        title: Text(
+          'Change Number of People',
+          style: TextStyle(fontFamily: 'Regular'),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Select new number of guests:',
+              style: TextStyle(fontFamily: 'Regular'),
+            ),
+            SizedBox(height: 16),
+            DropdownButton<int>(
+              value: newPeople,
+              isExpanded: true,
+              items: List.generate(
+                20,
+                (i) => DropdownMenuItem(
+                  value: i + 1,
+                  child: Text(
+                    '${i + 1} ${i == 0 ? 'person' : 'people'}',
+                    style: TextStyle(fontFamily: 'Regular'),
+                  ),
+                ),
+              ),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => newPeople = value);
+                }
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(fontFamily: 'Regular')),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _updateBookingPeople(booking, newPeople);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: gradient1,
+            ),
+            child: Text(
+              'Update',
+              style: TextStyle(fontFamily: 'Regular', color: whiteColor),
             ),
           ),
         ],
       ),
+    ),
+  );
+}
+
+Future<void> _updateBookingPeople(
+  DiningBooking booking,
+  int newPeople,
+) async {
+  try {
+    await DiningBookingService().updateTableBooking(
+      bookingId: booking.bookingId,
+      newNumberOfPeople: newPeople,
     );
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Booking updated successfully'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Failed to update booking: ${e.toString()}'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+}
+
+void _showCancelDialog(DiningBooking booking) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(
+        'Cancel Booking',
+        style: TextStyle(fontFamily: 'Regular'),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Are you sure you want to cancel this booking?',
+            style: TextStyle(fontFamily: 'Regular'),
+          ),
+          SizedBox(height: 16),
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Booking Details:',
+                  style: TextStyle(
+                    fontFamily: 'Regular',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  '${booking.startTime} - ${booking.endTime}',
+                  style: TextStyle(fontFamily: 'Regular', fontSize: 12),
+                ),
+                Text(
+                  '${booking.numberOfPeople} people',
+                  style: TextStyle(fontFamily: 'Regular', fontSize: 12),
+                ),
+                if (booking.advanceAmount != null) ...[
+                  SizedBox(height: 4),
+                  Text(
+                    'Advance paid: ₹${booking.advanceAmount}',
+                    style: TextStyle(
+                      fontFamily: 'Regular',
+                      fontSize: 12,
+                      color: Colors.red.shade700,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          SizedBox(height: 12),
+          Text(
+            'Note: Advance payment is non-refundable.',
+            style: TextStyle(
+              fontFamily: 'Regular',
+              fontSize: 11,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('No, Keep It', style: TextStyle(fontFamily: 'Regular')),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            Navigator.pop(context);
+            await _cancelBooking(booking);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+          ),
+          child: Text(
+            'Yes, Cancel',
+            style: TextStyle(fontFamily: 'Regular', color: whiteColor),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Future<void> _cancelBooking(DiningBooking booking) async {
+  try {
+    await DiningBookingService().cancelBooking(booking.bookingId);
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Booking cancelled successfully'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Failed to cancel booking: ${e.toString()}'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+}
+
+// Add this helper extension at the top of the file
+
+}
+
+extension IterableExtension<T> on Iterable<T> {
+  T? firstWhereOrNull(bool Function(T element) test) {
+    for (var element in this) {
+      if (test(element)) return element;
+    }
+    return null;
+  }
+}
+
+// Also add this to convert DiningFull to Map
+extension DiningFullExtension on DiningFull {
+  Map<String, dynamic> toMap() {
+    return {
+      'diningId': diningId,
+      'name': name,
+      'briefDescription': briefDescription,
+      'description': description,
+      'carouselImages': carouselImages,
+      'menuImages': menuImages,
+      'aboutImages': aboutImages,
+      'formattedRating': formattedRating,
+      'totalReviews': totalReviews,
+      'reviewSource': reviewSource,
+      'formattedTimings': formattedTimings,
+      'cuisines': cuisines,
+      'facilities': facilities,
+      'max_capacity': 50, // Default or get from your data
+      'avg_price_per_person': 500, // Default or get from your data
+    };
   }
 }
 
