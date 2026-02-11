@@ -1,8 +1,0 @@
-import 'package:flutter/material.dart';
-import 'package:ticpin/constants/size.dart';
-
-final TextStyle mainTitleTextStyle = TextStyle(
-  letterSpacing: 2,
-  fontFamily: 'Regular',
-  fontSize: Sizes().width * 0.04,
-);
