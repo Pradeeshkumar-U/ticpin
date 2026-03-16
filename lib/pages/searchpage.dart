@@ -1,4 +1,3 @@
-import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ticpin/constants/colors.dart';
@@ -9,7 +8,7 @@ import 'package:ticpin/pages/view/dining/restaurentpage.dart';
 import 'package:ticpin/pages/view/sports/turfpage.dart';
 
 class UniversalSearchPage extends StatefulWidget {
-  const UniversalSearchPage({Key? key}) : super(key: key);
+  const UniversalSearchPage({super.key});
 
   @override
   State<UniversalSearchPage> createState() => _UniversalSearchPageState();

@@ -1166,6 +1166,8 @@ import 'package:ticpin/constants/colors.dart';
 import 'package:ticpin/constants/models/user/userservice.dart';
 import 'package:ticpin/constants/size.dart';
 import 'package:ticpin/pages/view/sports/snacksbar.dart';
+import 'package:ticpin/services/payments.dart';
+import 'package:ticpin/services/ticket.dart';
 
 class TurfCheckoutPage extends StatefulWidget {
   final String turfId;
@@ -1179,7 +1181,7 @@ class TurfCheckoutPage extends StatefulWidget {
   final String? existingBookingId; // Optional: for existing pending bookings
 
   const TurfCheckoutPage({
-    Key? key,
+    super.key,
     required this.turfId,
     required this.turfData,
     required this.selectedDate,
@@ -1189,7 +1191,7 @@ class TurfCheckoutPage extends StatefulWidget {
     required this.totalHours,
     required this.totalAmount,
     this.existingBookingId,
-  }) : super(key: key);
+  });
 
   @override
   State<TurfCheckoutPage> createState() => _TurfCheckoutPageState();
@@ -1573,7 +1575,64 @@ class _TurfCheckoutPageState extends State<TurfCheckoutPage>
         },
       });
 
-      _showPaymentDialog();
+      // Launch PaymentPage
+      final paymentResult = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => PaymentPage(
+                amount: widget.totalAmount.toDouble(),
+                organizerId: widget.turfId,
+                userEmail: _emailController.text.trim(),
+                userPhone: _phoneController.text.trim(),
+                userId: FirebaseAuth.instance.currentUser?.uid ?? 'guest',
+                onPaymentSuccess: (paymentId, orderId) {
+                  Navigator.pop(context, true);
+                },
+                onPaymentError: (error) {
+                  Navigator.pop(context, false);
+                },
+              ),
+        ),
+      );
+
+      if (paymentResult != true) {
+        if (mounted) setState(() => isProcessing = false);
+        return;
+      }
+
+      // Handle payment success
+      await _firestore.collection('turf_bookings').doc(bookingId).update({
+        'status': 'confirmed',
+        'paidAt': FieldValue.serverTimestamp(),
+      });
+
+      _countdownTimer?.cancel();
+      _timerService.checkPendingBookings();
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => TicketCard(
+                  bookingId: bookingId!,
+                  eventName: 'Turf: ${widget.turfData['name'] ?? ''}',
+                  date: widget.selectedDate,
+                  time: widget.session,
+                  venue: widget.turfData['address'] ?? 'Ticpin',
+                  seats: widget.fieldSize,
+                  posterPath:
+                      (widget.turfData['images'] != null &&
+                              (widget.turfData['images'] as List).isNotEmpty)
+                          ? widget.turfData['images'][0]
+                          : 'https://via.placeholder.com/150',
+                  qrImagePath: bookingId!,
+                  logoPath: 'assets/logo.png',
+                ),
+          ),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1582,75 +1641,10 @@ class _TurfCheckoutPageState extends State<TurfCheckoutPage>
         ),
       );
     } finally {
-      setState(() => isProcessing = false);
+      if (mounted) {
+        setState(() => isProcessing = false);
+      }
     }
-  }
-
-  void _showPaymentDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (context) => AlertDialog(
-            title: Text('Payment', style: TextStyle(fontFamily: 'Regular')),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Booking ID: $bookingId',
-                  style: TextStyle(fontFamily: 'Regular'),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Amount: ₹${widget.totalAmount}',
-                  style: TextStyle(
-                    fontFamily: 'Regular',
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'Payment gateway integration pending',
-                  style: TextStyle(color: Colors.grey, fontFamily: 'Regular'),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Cancel', style: TextStyle(fontFamily: 'Regular')),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  // Simulate payment success
-                  await _firestore
-                      .collection('turf_bookings')
-                      .doc(bookingId)
-                      .update({
-                        'status': 'confirmed',
-                        'paidAt': FieldValue.serverTimestamp(),
-                      });
-
-                  _countdownTimer?.cancel();
-                  _timerService.checkPendingBookings();
-
-                  Navigator.pop(context); // Close dialog
-                  _navigateToTurfPage();
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Booking confirmed!'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                child: Text('Pay Now', style: TextStyle(fontFamily: 'Regular')),
-              ),
-            ],
-          ),
-    );
   }
 
   String _formatDuration(Duration duration) {

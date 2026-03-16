@@ -5,7 +5,6 @@ import 'package:ticpin/constants/colors.dart';
 import 'package:ticpin/constants/models/user/user.dart';
 import 'package:ticpin/constants/models/user/userservice.dart';
 import 'package:ticpin/constants/size.dart';
-import 'package:ticpin/pages/home/homepage.dart';
 import 'package:ticpin/pages/view/artists/artistspage.dart';
 import 'package:ticpin/pages/view/concerts/concertpage.dart';
 import 'package:ticpin/pages/view/dining/restaurentpage.dart';
@@ -19,7 +18,7 @@ class _TabItem {
 }
 
 class TicListPage extends StatefulWidget {
-  const TicListPage({Key? key}) : super(key: key);
+  const TicListPage({super.key});
 
   @override
   State<TicListPage> createState() => _TicListPageState();

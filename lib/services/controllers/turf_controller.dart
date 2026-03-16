@@ -240,10 +240,13 @@ class TurfController extends GetxController {
       }
 
       allSummaries.value =
-          snap.docs.map((doc) {
-            print('  - Processing doc: ${doc.id}');
-            return TurfSummary.fromDoc(doc);
-          }).toList();
+          snap.docs
+              .map((doc) {
+                print('  - Processing doc: ${doc.id}');
+                return TurfSummary.fromDoc(doc);
+              })
+              .where((turf) => turf.isApproved)
+              .toList();
 
       _lastDocument = snap.docs.last;
       _hasMore = snap.docs.length == _pageSize;
@@ -349,10 +352,11 @@ class TurfController extends GetxController {
         result[key] =
             value.map((item) {
               if (item is Timestamp) return item.toDate();
-              if (item is Map)
+              if (item is Map) {
                 return _convertFirestoreTimestamps(
                   Map<String, dynamic>.from(item),
                 );
+              }
               return item;
             }).toList();
       } else {
@@ -387,10 +391,11 @@ class TurfController extends GetxController {
                   return item;
                 }
               }
-              if (item is Map)
+              if (item is Map) {
                 return _restoreTimestampsFromCache(
                   Map<String, dynamic>.from(item),
                 );
+              }
               return item;
             }).toList();
       } else {
@@ -428,7 +433,10 @@ class TurfController extends GetxController {
       }
 
       final newTurfs =
-          snap.docs.map((doc) => TurfSummary.fromDoc(doc)).toList();
+          snap.docs
+              .map((doc) => TurfSummary.fromDoc(doc))
+              .where((turf) => turf.isApproved)
+              .toList();
       allSummaries.addAll(newTurfs);
       _lastDocument = snap.docs.last;
       _hasMore = snap.docs.length == _pageSize;
@@ -480,6 +488,7 @@ class TurfController extends GetxController {
               .map(
                 (item) => TurfSummary.fromJson(Map<String, dynamic>.from(item)),
               )
+              .where((turf) => turf.isApproved)
               .toList();
 
       print('✅ Loaded ${allSummaries.length} turfs from cache');

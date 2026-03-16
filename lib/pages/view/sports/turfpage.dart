@@ -1,18 +1,13 @@
-import 'package:buttons_tabbar/buttons_tabbar.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 import 'package:ticpin/constants/colors.dart';
 import 'package:ticpin/constants/models/turf/turffull.dart';
 import 'package:ticpin/constants/models/user/user.dart';
 import 'package:ticpin/constants/shapes/ticbutton.dart';
 import 'package:ticpin/constants/shimmer.dart';
 import 'package:ticpin/constants/size.dart';
-import 'package:ticpin/pages/view/dining/billpaypage.dart';
 import 'package:ticpin/pages/view/sports/bookingpage.dart';
 import 'package:ticpin/pages/view/sports/snacksbar.dart';
 import 'package:ticpin/services/controllers/turf_controller.dart';
@@ -50,8 +45,8 @@ class _TurfpageState extends State<Turfpage> with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   double _appBarOpacity = 0.0;
 
-  CarouselSliderController _turfController = CarouselSliderController();
-  int _turfCurrent = 0;
+  final CarouselSliderController _turfController = CarouselSliderController();
+  final int _turfCurrent = 0;
   final TurfController controller = Get.find<TurfController>();
   List<SnackItem> snacks = [
     SnackItem(name: "Lays", det: "Red lays with more quantity", price: 20),

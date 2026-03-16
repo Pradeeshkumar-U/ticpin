@@ -134,7 +134,6 @@
 // }
 
 import 'package:get/get.dart';
-import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get_storage/get_storage.dart';
 import 'dart:convert';
@@ -367,12 +366,10 @@ class LocationController extends GetxController {
           }
 
           // Backup for city
-          if (cityName == null) {
-            cityName = components.firstWhere(
+          cityName ??= components.firstWhere(
               (c) => (c["types"] as List).contains("administrative_area_level_3"),
               orElse: () => {"long_name": "Unknown"},
             )["long_name"];
-          }
 
           city.value = cityName ?? "Unknown";
           state.value = stateName ?? "";

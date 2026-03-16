@@ -5,7 +5,7 @@ import 'package:ticpin/constants/colors.dart';
 import 'package:ticpin/constants/size.dart';
 
 class VouchersPage extends StatefulWidget {
-  const VouchersPage({Key? key}) : super(key: key);
+  const VouchersPage({super.key});
 
   @override
   State<VouchersPage> createState() => _VouchersPageState();

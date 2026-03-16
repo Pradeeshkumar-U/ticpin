@@ -1138,7 +1138,7 @@ class _SportsBookingPageState extends State<SportsBookingPage>
               bookedSlots =
                   slots.entries
                       .where((e) => e.value == true)
-                      .map((e) => e.key as String)
+                      .map((e) => e.key)
                       .toSet();
             });
           }

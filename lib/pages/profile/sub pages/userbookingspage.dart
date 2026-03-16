@@ -1098,7 +1098,7 @@ class _UserBookingsPageState extends State<UserBookingsPage>
                       ],
                     ),
                   );
-                }).toList(),
+                }),
                 SizedBox(height: 12),
               ],
 
@@ -1502,7 +1502,7 @@ class _UserBookingsPageState extends State<UserBookingsPage>
                               ticket['ticketType'],
                               '${ticket['quantity']} × ₹${ticket['price']} = ₹${ticket['subtotal']}',
                             );
-                          }).toList(),
+                          }),
                       ] else ...[
                         _buildDetailRow(
                           'Turf Name',

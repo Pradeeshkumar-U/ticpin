@@ -14,6 +14,8 @@ import 'package:ticpin/services/controllers/event_controller.dart';
 import 'package:ticpin/services/controllers/videoController.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:ticpin/constants/glass_container.dart';
+
 
 class Temp {
   static final eventNotIsVideo = false;
@@ -157,18 +159,13 @@ class _TurfPosterCarouselState extends State<TurfPosterCarousel> {
                 ),
               ),
             ),
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
-                ),
-                border: Border(
-                  bottom: BorderSide(color: Colors.black12, width: 1),
-                  left: BorderSide(color: Colors.black12, width: 1),
-                  right: BorderSide(color: Colors.black12, width: 1),
-                ),
-              ),
+            TicpinGlassContainer(
+              width: width,
+              height: widget.size.safeWidth * 0.22,
+              borderRadius: 20,
+              blur: 10,
+              linearGradientOpacity: 0.05,
+              borderGradientOpacity: 0.1,
               child: Padding(
                 padding: EdgeInsets.all(8.0),
                 child: Row(
@@ -186,9 +183,8 @@ class _TurfPosterCarouselState extends State<TurfPosterCarousel> {
                           widget.city,
                           widget.size.safeWidth * 0.033,
                         ),
-
                         customTextStyle(
-                          '${widget.price}',
+                          widget.price,
                           widget.size.safeWidth * 0.033,
                         ),
                       ],
@@ -358,8 +354,9 @@ class _PosterCarouselState extends State<PosterCarousel> {
       child: VisibilityDetector(
         key: Key("event-video-${widget.currentIndex}"),
         onVisibilityChanged: (visibility) {
-          if (ctrl.videoControllers.length <= widget.index)
+          if (ctrl.videoControllers.length <= widget.index) {
             return; // SAFETY CHECK
+          }
 
           double visible = visibility.visibleFraction;
           if (visible > 0.6) {
@@ -561,20 +558,13 @@ class _PosterCarouselState extends State<PosterCarousel> {
               ),
 
               // Text Below
-              Container(
+              TicpinGlassContainer(
                 width: width,
-                // margin: EdgeInsets.all(Sizes().width * 0.1),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(17),
-                    bottomRight: Radius.circular(17),
-                  ),
-                  border: Border(
-                    bottom: BorderSide(color: Colors.black12, width: 1),
-                    left: BorderSide(color: Colors.black12, width: 1),
-                    right: BorderSide(color: Colors.black12, width: 1),
-                  ),
-                ),
+                height: widget.size.safeWidth * 0.32,
+                borderRadius: 17,
+                blur: 10,
+                linearGradientOpacity: 0.05,
+                borderGradientOpacity: 0.1,
                 child: Padding(
                   padding: EdgeInsets.all(widget.size.safeWidth * 0.03),
                   child: Column(
@@ -594,18 +584,6 @@ class _PosterCarouselState extends State<PosterCarousel> {
                         widget.loc,
                         widget.size.safeWidth * 0.035,
                       ),
-                      // Obx(
-                      //   () => Padding(
-                      //     padding: EdgeInsets.all(widget.size.safeWidth * 0.001),
-                      //     child: Text(
-                      //       "${widget.event.distanceKm.toStringAsFixed(2)} km away",
-                      //       style: TextStyle(
-                      //         fontSize: widget.size.safeWidth * 0.035,
-                      //         fontFamily: 'Regular',
-                      //       ),
-                      //     ),
-                      //   ),
-                      // ),
                       Padding(
                         padding: EdgeInsets.all(widget.size.safeWidth * 0.001),
                         child: Text(

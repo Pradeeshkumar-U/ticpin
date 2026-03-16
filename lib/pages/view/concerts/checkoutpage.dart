@@ -4,7 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ticpin/constants/colors.dart';
 import 'package:ticpin/constants/models/user/userservice.dart';
-import 'package:ticpin/constants/size.dart';
+import 'package:ticpin/services/payments.dart';
+import 'package:ticpin/services/ticket.dart';
 
 class EventCheckoutPage extends StatefulWidget {
   final String eventId;
@@ -13,12 +14,12 @@ class EventCheckoutPage extends StatefulWidget {
   final int totalAmount;
 
   const EventCheckoutPage({
-    Key? key,
+    super.key,
     required this.eventId,
     required this.eventData,
     required this.selectedTickets,
     required this.totalAmount,
-  }) : super(key: key);
+  });
 
   @override
   State<EventCheckoutPage> createState() => _EventCheckoutPageState();
@@ -163,17 +164,17 @@ class _EventCheckoutPageState extends State<EventCheckoutPage>
         );
 
         transaction.set(
-  _firestore
-      .collection('users')
-      .doc(user.uid)
-      .collection('bookings')
-      .doc(newBookingId),
-  {
-    'bookingId' :newBookingId, 
-    'bookingType': 'event',
-    'createdAt': FieldValue.serverTimestamp(),
-  },
-);
+          _firestore
+              .collection('users')
+              .doc(user.uid)
+              .collection('bookings')
+              .doc(newBookingId),
+          {
+            'bookingId': newBookingId,
+            'bookingType': 'event',
+            'createdAt': FieldValue.serverTimestamp(),
+          },
+        );
 
         return {'success': true, 'bookingId': newBookingId};
       }, timeout: const Duration(seconds: 10));
@@ -293,7 +294,70 @@ class _EventCheckoutPageState extends State<EventCheckoutPage>
         },
       });
 
-      _showPaymentDialog();
+      // Launch PaymentPage
+      final paymentResult = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => PaymentPage(
+                amount: widget.totalAmount.toDouble(),
+                organizerId: widget.eventId,
+                userEmail: _emailController.text.trim(),
+                userPhone: _phoneController.text.trim(),
+                userId: FirebaseAuth.instance.currentUser?.uid ?? 'guest',
+                onPaymentSuccess: (paymentId, orderId) {
+                  Navigator.pop(context, true);
+                },
+                onPaymentError: (error) {
+                  Navigator.pop(context, false);
+                },
+              ),
+        ),
+      );
+
+      if (paymentResult != true) {
+        if (mounted) setState(() => isProcessing = false);
+        return;
+      }
+
+      await _firestore.collection('bookings').doc(bookingId).update({
+        'status': 'confirmed',
+        'paidAt': FieldValue.serverTimestamp(),
+      });
+
+      _countdownTimer?.cancel();
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => TicketCard(
+                  bookingId: bookingId!,
+                  eventName: 'Event: ${widget.eventData['name'] ?? ''}',
+                  date:
+                      widget.eventData['dateTime'] != null
+                          ? (widget.eventData['dateTime'] as Timestamp)
+                              .toDate()
+                              .toString()
+                              .split(' ')[0]
+                          : 'TBD',
+                  time: 'TBD',
+                  venue: widget.eventData['venue']?['name'] ?? 'TBD',
+                  seats: widget.selectedTickets
+                      .map((t) => '${t['ticketType']} x${t['quantity']}')
+                      .join(', '),
+                  posterPath:
+                      widget.eventData['media'] != null
+                          ? widget.eventData['media']['posterLink'] ??
+                              'https://via.placeholder.com/150'
+                          : 'https://via.placeholder.com/150',
+                  qrImagePath: bookingId!,
+                  logoPath: 'assets/logo.png',
+                ),
+          ),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -302,73 +366,10 @@ class _EventCheckoutPageState extends State<EventCheckoutPage>
         ),
       );
     } finally {
-      setState(() => isProcessing = false);
+      if (mounted) {
+        setState(() => isProcessing = false);
+      }
     }
-  }
-
-  void _showPaymentDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (context) => AlertDialog(
-            title: Text('Payment', style: TextStyle(fontFamily: 'Regular')),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Booking ID: $bookingId',
-                  style: TextStyle(fontFamily: 'Regular'),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Amount: ₹${widget.totalAmount}',
-                  style: TextStyle(
-                    fontFamily: 'Regular',
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'Payment gateway integration pending',
-                  style: TextStyle(color: Colors.grey, fontFamily: 'Regular'),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pop(context);
-                },
-                child: Text('Cancel', style: TextStyle(fontFamily: 'Regular')),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  await _firestore.collection('bookings').doc(bookingId).update(
-                    {
-                      'status': 'confirmed',
-                      'paidAt': FieldValue.serverTimestamp(),
-                    },
-                  );
-
-                  Navigator.pop(context);
-                  Navigator.pop(context);
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Booking confirmed!'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                child: Text('Pay Now', style: TextStyle(fontFamily: 'Regular')),
-              ),
-            ],
-          ),
-    );
   }
 
   String _formatDuration(Duration duration) {
@@ -544,7 +545,7 @@ class _EventCheckoutPageState extends State<EventCheckoutPage>
                                       ],
                                     ),
                                   );
-                                }).toList(),
+                                }),
                                 Divider(),
                                 Row(
                                   mainAxisAlignment:

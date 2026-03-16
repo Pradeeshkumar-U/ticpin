@@ -16,7 +16,6 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:ticpin/constants/temporary.dart';
 import 'package:ticpin/pages/view/concerts/bookticketpage.dart';
-import 'package:ticpin/pages/view/concerts/checkoutpage.dart';
 import 'package:ticpin/services/controllers/event_controller.dart';
 import 'package:ticpin/services/controllers/videoController.dart';
 import 'package:ticpin/services/places.dart';
@@ -113,7 +112,7 @@ class _ConcertpageState extends State<Concertpage>
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
-      child: Container(
+      child: SizedBox(
         height: size.height,
         width: size.width,
         // width: size.safeWidth * 0.8,

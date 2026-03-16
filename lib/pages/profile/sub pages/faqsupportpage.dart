@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
 import 'package:ticpin/constants/colors.dart';
 import 'package:ticpin/constants/size.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 // ==================== FAQ PAGE ====================
 
 class FAQPage extends StatefulWidget {
-  const FAQPage({Key? key}) : super(key: key);
+  const FAQPage({super.key});
 
   @override
   State<FAQPage> createState() => _FAQPageState();
@@ -130,7 +128,7 @@ class FAQ {
 // ==================== CHAT SUPPORT PAGE ====================
 
 class ChatSupportPage extends StatefulWidget {
-  const ChatSupportPage({Key? key}) : super(key: key);
+  const ChatSupportPage({super.key});
 
   @override
   State<ChatSupportPage> createState() => _ChatSupportPageState();
@@ -366,7 +364,7 @@ class ChatMessage {
 // ==================== FEEDBACK PAGE ====================
 
 class FeedbackPage extends StatefulWidget {
-  const FeedbackPage({Key? key}) : super(key: key);
+  const FeedbackPage({super.key});
 
   @override
   State<FeedbackPage> createState() => _FeedbackPageState();

@@ -96,8 +96,8 @@ class _SelectTimingpageState extends State<SelectTimingpage> {
                           for (int i = 1; i <= limited_seat; i++)
                             DropdownMenuItem(
                               value: i,
-                              child: Text("$i"),
                               alignment: Alignment.center,
+                              child: Text("$i"),
                             ),
                         ],
                         onChanged:

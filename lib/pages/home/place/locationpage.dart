@@ -1,84 +1,46 @@
-import 'dart:convert';
-
-import 'package:azlistview/azlistview.dart';
+import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:azlistview/azlistview.dart';
+import 'package:geolocator_platform_interface/src/models/position.dart';
 import 'package:get/get.dart';
-import 'package:http/http.dart' as http;
 import 'package:ticpin/constants/colors.dart';
-import 'package:ticpin/constants/constant.dart';
-import 'package:ticpin/constants/shapes/locationtiles.dart';
 import 'package:ticpin/constants/size.dart';
-import 'package:ticpin/constants/styles.dart';
-import 'package:ticpin/pages/home/homepage.dart';
+import 'package:ticpin/constants/glass_container.dart';
 import 'package:ticpin/services/controllers/event_controller.dart';
 import 'package:ticpin/services/controllers/location_controller.dart';
+import 'package:ticpin/pages/home/homepage.dart';
 import 'package:ticpin/services/places.dart';
+import 'package:geolocator/geolocator.dart';
 
-// ignore: must_be_immutable
+class CityModel extends ISuspensionBean {
+  final String name;
+  String? tag;
+
+  CityModel({required this.name, this.tag});
+
+  @override
+  String getSuspensionTag() => tag!;
+}
+
 class Locationpage extends StatefulWidget {
-  Locationpage({super.key, required this.position});
-  Position position;
+  final Position position;
+  const Locationpage({super.key, required this.position});
 
   @override
   State<Locationpage> createState() => _LocationpageState();
 }
 
 class _LocationpageState extends State<Locationpage> {
-  String? response;
-  List<CountryList> items = [];
-
-  Position? _position;
-  @override
-  void initState() {
-    super.initState();
-    initList(tn_places);
-    _determinePosition();
-  }
-
-  void initList(List<String> list) {
-    items = list.map((item) => CountryList(name: item, tag: item[0])).toList();
-  }
-
+  final TextEditingController _controller = TextEditingController();
   List<AutocompletePrediction> placePred = [];
+  List<CityModel> items = [];
+  final locationController = Get.find<LocationController>();
+  final eventController = Get.find<EventController>();
+  Sizes size = Sizes();
 
-  TextEditingController _controller = TextEditingController();
-  void placesAutocomplete(String query) async {
-    final uri = Uri.https(
-      'maps.googleapis.com',
-      'maps/api/place/autocomplete/json',
-      {
-        'input': query,
-        // 'types': '(cities)', // restrict to cities
-        'components': 'country:in', // restrict to India
-        'location':
-            _position == null
-                ? '10.8,78.7'
-                : '${_position!.latitude},${_position!.longitude}',
-        'radius': '30000',
-        'key': placesApiKey,
-      },
-    );
-
-    response = await Places().fetchUrl(uri);
-    if (response != null) {
-      PlaceAutoCompleteResponse res =
-          PlaceAutoCompleteResponse.parseAutoCompleteResult(response!);
-      if (res.pred != null) {
-        setState(() {
-          placePred = res.pred!;
-        });
-      } else {
-        setState(() {
-          placePred = [];
-        });
-      }
-    }
-  }
-
-  final tn_places = [
+  final List<String> tn_places = [
     'Agastheeswaram',
     'Alandur',
     'Alangudi',
@@ -304,7 +266,6 @@ class _LocationpageState extends State<Locationpage> {
     'Singampunari',
     'Sirkazhi',
     'Sivaganga',
-    // 'Sivagangai',
     'Sivagiri',
     'Sivakasi',
     'Srimushnam',
@@ -328,7 +289,6 @@ class _LocationpageState extends State<Locationpage> {
     'Thirumangalam',
     'Thirumayam',
     'Thirupathur',
-    // 'Thirupattur',
     'Thirupparankundram',
     'Thirupporur',
     'Thiruppuvanam',
@@ -350,11 +310,9 @@ class _LocationpageState extends State<Locationpage> {
     'Tindivanam',
     'Tiruchendur',
     'Tiruchengode',
-    // 'Tiruchengodu',
     'Tiruchirappalli',
     'Tiruchuli',
     'Tirukkoilur',
-    // 'Tirukoilur',
     'Tirunelveli',
     'Tirupattur',
     'Tiruppur',
@@ -407,73 +365,34 @@ class _LocationpageState extends State<Locationpage> {
     'Yercaud',
   ];
 
-  String? _address;
-  bool _loading = false;
-
-  String? place = '';
-
-  /// Get permission and current location
-  void _determinePosition() async {
-    _position = widget.position;
+  @override
+  void initState() {
+    super.initState();
+    initList(tn_places);
   }
 
-  void _showCityDialog(String? city) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: Text("City Found"),
-            content: Text("Your current city is $city"),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  Navigator.pop(
-                    context,
-                    city,
-                  ); // Go back to previous page with city
-                },
-                child: Text("Cancel"),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  Navigator.pop(
-                    context,
-                    city,
-                  ); // Go back to previous page with city
-                },
-                child: Text("Continue"),
-              ),
-            ],
-          ),
-    );
+  void initList(List<String> list) {
+    items =
+        list.map((e) {
+          return CityModel(name: e, tag: e[0].toUpperCase());
+        }).toList();
+    SuspensionUtil.sortListBySuspensionTag(items);
+    SuspensionUtil.setShowSuspensionStatus(items);
   }
 
-  /// Get current address using Places API
-  // Future<void> _getCurrentAddress() async {
-  //   setState(() => _loading = true);
-  //   try {
-  //     final result = await getCityFromCoords(
-  //       _position!.latitude,
-  //       _position!.longitude,
-  //     );
+  Future<void> placesAutocomplete(String query) async {
+    if (query.isEmpty) {
+      if (mounted) setState(() => placePred = []);
+      return;
+    }
+    final response = await Places().getAutocomplete(query);
+    if (mounted) {
+      setState(() {
+        placePred = response.pred ?? [];
+      });
+    }
+  }
 
-  //     setState(() {
-  //       _address = result ?? 'No address found';
-  //     });
-  //   } catch (e) {
-  //     setState(() {
-  //       _address = 'Error: $e';
-  //     });
-  //   } finally {
-  //     setState(() => _loading = false);
-  //   }
-  // }
-  final eventController = Get.find<EventController>();
-  final locationController = Get.find<LocationController>();
-
-  Sizes size = Sizes();
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -481,16 +400,18 @@ class _LocationpageState extends State<Locationpage> {
       top: false,
       child: Scaffold(
         resizeToAvoidBottomInset: false,
-        backgroundColor: whiteColor,
+        backgroundColor: Platform.isIOS ? Colors.black : whiteColor,
         appBar: AppBar(
-          backgroundColor: whiteColor,
+          backgroundColor: Platform.isIOS ? Colors.black : whiteColor,
           surfaceTintColor: Colors.transparent,
+          elevation: 0,
           leading: Padding(
-            padding: const EdgeInsets.only(left: defaultPadding),
+            padding: const EdgeInsets.only(left: 15),
             child: GestureDetector(
               child: Icon(
                 Icons.keyboard_arrow_down_sharp,
                 size: size.safeWidth * 0.08,
+                color: Platform.isIOS ? whiteColor : Colors.black,
               ),
               onTap: () => Get.back(),
             ),
@@ -500,361 +421,286 @@ class _LocationpageState extends State<Locationpage> {
             style: TextStyle(
               fontSize: size.safeWidth * 0.045,
               fontFamily: 'Regular',
+              color: Platform.isIOS ? whiteColor : Colors.black,
             ),
           ),
         ),
-        body: Column(
+        body: Stack(
           children: [
-            Container(
-              width: size.safeWidth * 0.9,
-              height: size.safeHeight * 0.07,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.black26, width: 1),
-                borderRadius: BorderRadius.circular(13),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(left: size.safeWidth * 0.04),
-                    child: Icon(CupertinoIcons.search, size: size.width * 0.06),
+            if (Platform.isIOS)
+              Container(
+                height: size.height,
+                width: size.width,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [gradient1, gradient2, Colors.black],
                   ),
-                  SizedBox(
-                    width: size.safeWidth * 0.75,
+                ),
+              ),
+            Column(
+              children: [
+                const SizedBox(height: 10),
+                _buildSearchBar(),
+                _buildCurrentLocationButton(),
+                _controller.text.isEmpty
+                    ? _buildAzList()
+                    : _buildPredictionList(),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-                    // height: size.safeHeight * 0.07,
-                    child: Align(
-                      alignment: Alignment.center,
-                      child: TextField(
-                        textCapitalization: TextCapitalization.sentences,
-                        cursorColor: blackColor,
-                        controller: _controller,
-                        onChanged: (value) {
-                          setState(() {
-                            placePred = [];
-                          });
-                          placesAutocomplete(value);
-                        },
-                        style: TextStyle(
-                          // fontSize: size.safeWidth * 0.04,
-                          color: Colors.black,
-                          fontFamily: 'Regular',
-                        ),
-                        decoration: InputDecoration(
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 20,
-                            // vertical: 16,
-                          ),
+  Widget _buildSearchBar() {
+    return Center(
+      child: TicpinGlassContainer(
+        width: size.safeWidth * 0.9,
+        height: size.safeHeight * 0.07,
+        borderRadius: 13,
+        child: Container(
+          height: size.safeHeight * 0.07,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Platform.isIOS ? Colors.white24 : Colors.black26,
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(13),
+          ),
+          child: Row(
+            children: [
+              Padding(
+                padding: EdgeInsets.only(left: size.safeWidth * 0.04),
+                child: Icon(
+                  CupertinoIcons.search,
+                  size: size.width * 0.06,
+                  color: Platform.isIOS ? whiteColor : Colors.black54,
+                ),
+              ),
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  textCapitalization: TextCapitalization.sentences,
+                  cursorColor: Platform.isIOS ? whiteColor : blackColor,
+                  style: TextStyle(
+                    color: Platform.isIOS ? whiteColor : Colors.black,
+                    fontFamily: 'Regular',
+                  ),
+                  onChanged: (value) {
+                    setState(() => placePred = []);
+                    placesAutocomplete(value);
+                  },
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 15),
+                    hintText: "Search your location",
+                    hintStyle: TextStyle(
+                      color: Platform.isIOS ? Colors.white54 : Colors.black38,
+                      fontFamily: 'Regular',
+                    ),
+                    border: InputBorder.none,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-                          hintText: "Search your location",
-                          border: InputBorder.none,
-                        ),
+  Widget _buildCurrentLocationButton() {
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: size.safeWidth * 0.05,
+        vertical: size.safeWidth * 0.05,
+      ),
+      child: TicpinGlassContainer(
+        width: size.safeWidth * 0.9,
+        height: size.safeWidth * 0.11,
+        borderRadius: 10,
+        child: ElevatedButton(
+          onPressed: () async {
+            locationController.manualLocationSelected = false;
+            locationController.city.value = "";
+            Get.off(() => Homepage());
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor:
+                Platform.isIOS
+                    ? Colors.white.withOpacity(0.1)
+                    : greyColor.withAlpha(30),
+            elevation: 0,
+            fixedSize: Size(size.safeWidth * 0.9, size.safeWidth * 0.11),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  SvgPicture.asset(
+                    "assets/images/icons/location.svg",
+                    height: 19,
+                    colorFilter: ColorFilter.mode(
+                      Platform.isIOS ? whiteColor : blackColor,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: size.safeWidth * 0.03,
+                    ),
+                    child: Text(
+                      "Use my Current Location",
+                      style: TextStyle(
+                        fontFamily: 'Regular',
+                        color: Platform.isIOS ? whiteColor : blackColor,
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
-            // Padding(
-            //   padding: EdgeInsets.symmetric(horizontal: size.safeWidth * 0.05),
-            //   child: Container(
-            //     height: size.safeHeight * 0.063,
-            //     decoration: BoxDecoration(
-            //       borderRadius: BorderRadius.circular(13),
-            //       border: Border.all(color: Colors.black26, width: 1),
-            //     ),
-            //     child: Align(
-            //       alignment: Alignment.centerLeft,
-            //       child: TextField(
-            //         textCapitalization: TextCapitalization.sentences,
-            //         cursorColor: blackColor,
-            //         controller: _controller,
-            //         textAlign: TextAlign.start, // Start alignment when typing
-            //         onChanged: (value) {
-            //           setState(() {
-            //             placePred = [];
-            //           });
-            //           placesAutocomplete(value);
-            //         },
-            //         style: TextStyle(fontFamily: 'Regular'),
-            //         textInputAction: TextInputAction.search,
-            //         decoration: InputDecoration(
-            //           isCollapsed: true,
-            //           border: InputBorder.none,
-            //           hintText: "Search your location",
-            //           hintStyle: TextStyle(fontFamily: 'Regular'),
-            //           prefixIcon: Icon(CupertinoIcons.search, size: 20),
-            //           contentPadding: EdgeInsets.symmetric(vertical: 14),
-            //           isDense: true,
-            //         ),
-            //       ),
-            //     ),
-            //   ),
-            // ),
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: size.safeWidth * 0.05,
-                vertical: size.safeWidth * 0.05,
+              Icon(
+                Icons.navigate_next,
+                size: size.safeWidth * 0.065,
+                color: Platform.isIOS ? whiteColor : blackColor,
               ),
-              child: ElevatedButton(
-                onPressed: () async {
-                  locationController.manualLocationSelected = false;
-                  locationController.city.value = "";
-                  Get.off(Homepage());
-                },
-
-                style: ElevatedButton.styleFrom(
-                  // splashFactory: NoSplash.splashFactory,
-                  backgroundColor: greyColor.withAlpha(30),
-                  elevation: 0,
-                  shadowColor: Colors.transparent,
-                  // foregroundColor: Colors.transparent,
-                  // surfaceTintColor: Colors.transparent,
-                  enableFeedback: false,
-                  overlayColor: Colors.transparent,
-                  fixedSize: Size(size.safeWidth * 0.9, size.safeWidth * 0.11),
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        SvgPicture.asset(
-                          "assets/images/icons/location.svg",
-                          height: 19,
-                        ),
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: size.safeWidth * 0.03,
-                          ),
-                          child: Text(
-                            "Use my Current Location",
-                            style: TextStyle(
-                              fontFamily: 'Regular',
-                              color: blackColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        // horizontal: size.safeWidth * 0.01,
-                      ),
-                      child: Icon(
-                        Icons.navigate_next,
-                        size: size.safeWidth * 0.065,
-                        color: blackColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            _controller.text.isEmpty
-                ? Expanded(
-                  child: AzListView(
-                    indexBarAlignment: Alignment.centerRight,
-                    data: items,
-                    itemCount: items.length,
-                    indexBarOptions: IndexBarOptions(
-                      indexHintAlignment: Alignment.centerRight,
-                      needRebuild: true,
-                    ),
-                    itemBuilder: (context, index) {
-                      final p = items[index].name;
-                      return Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: ListTile(
-                              minTileHeight: Sizes().height * 0.05,
-                              onTap: () {
-                                locationController.setUserCity(
-                                  "$p, Tamil Nadu",
-                                );
-                                eventController.loadAllEvents();
-                                Get.off(Homepage(fromLoc: '$p, Tamilnadu'));
-                              },
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              splashColor: Colors.transparent,
-                              selectedTileColor: Colors.transparent,
-                              selectedColor: Colors.transparent,
-                              focusColor: Colors.transparent,
-                              horizontalTitleGap: 0,
-                              leading: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    width: 1,
-                                    color: Colors.black54,
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Icon(Icons.location_on_outlined),
-                                ),
-                              ),
-                              // subtitle: Padding(
-                              //   padding: EdgeInsets.only(
-                              //     left: Sizes().width * 0.03,
-                              //   ),
-                              //   child: Text(
-                              //     p.structuredFormatting?.secondaryText!
-                              //             .replaceAll(', India', '') ??
-                              //         '',
-                              //     maxLines: 2,
-                              //     overflow: TextOverflow.ellipsis,
-                              //     style: TextStyle(
-                              //       fontFamily: 'Regular',
-                              //       fontSize: size.safeWidth * 0.03,
-                              //     ),
-                              //   ),
-                              // ),
-                              title: Padding(
-                                padding: EdgeInsets.only(
-                                  left: Sizes().width * 0.03,
-                                ),
-                                child: Text(
-                                  p,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontFamily: 'Medium',
-                                    fontSize: size.safeWidth * 0.035,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Divider(
-                            height: 2,
-                            thickness: 2,
-                            indent: Sizes().width * 0.05,
-                            endIndent: Sizes().width * 0.05,
-                            // color: blackColor,
-                            color: Color(
-                              0xFFF5F5F5,
-                            ), // Use a light color for the divider
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                )
-                : Expanded(
-                  child: ListView.builder(
-                    itemCount: placePred.length,
-                    itemBuilder: (context, index) {
-                      final p = placePred[index];
-                      return Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: ListTile(
-                              minTileHeight: Sizes().height * 0.05,
-                              onTap: () {
-                                final fullCity =
-                                    "${p.structuredFormatting?.mainText}, ${p.structuredFormatting?.secondaryText}";
-
-                                locationController.setUserCity(fullCity);
-                                eventController.loadAllEvents();
-
-                                Get.off(
-                                  Homepage(
-                                    fromLoc:
-                                        '${p.structuredFormatting?.mainText}, ${p.structuredFormatting?.secondaryText!.replaceAll(', India', '')}',
-                                    address:
-                                        '${p.structuredFormatting?.mainText}, ${p.structuredFormatting?.secondaryText}',
-                                  ),
-                                );
-                              },
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              splashColor: Colors.transparent,
-                              selectedTileColor: Colors.transparent,
-                              selectedColor: Colors.transparent,
-                              focusColor: Colors.transparent,
-                              horizontalTitleGap: 0,
-                              leading: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    width: 1,
-                                    color: Colors.black54,
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Icon(Icons.location_on_outlined),
-                                ),
-                              ),
-                              subtitle: Padding(
-                                padding: EdgeInsets.only(
-                                  left: Sizes().width * 0.03,
-                                ),
-                                child: Text(
-                                  p.structuredFormatting?.secondaryText!
-                                          .replaceAll(', India', '') ??
-                                      '',
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontFamily: 'Regular',
-                                    fontSize: size.safeWidth * 0.03,
-                                  ),
-                                ),
-                              ),
-                              title: Padding(
-                                padding: EdgeInsets.only(
-                                  left: Sizes().width * 0.03,
-                                ),
-                                child: Text(
-                                  p.structuredFormatting?.mainText ?? '',
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontFamily: 'Medium',
-                                    fontSize: size.safeWidth * 0.035,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Divider(
-                            height: 2,
-                            thickness: 2,
-                            indent: Sizes().width * 0.05,
-                            endIndent: Sizes().width * 0.05,
-                            // color: blackColor,
-                            color: Color(
-                              0xFFF5F5F5,
-                            ), // Use a light color for the divider
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-            // LocationListTile(
-            //   press: () {},
-            //   location:
-
-            // ),
-            // Center(
-            //   child: Text(
-            //     response != null ? response! : "Banasree, Dhaka, Bangladesh",
-            //   ),
-            // ),
-          ],
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAzList() {
+    return Expanded(
+      child: AzListView(
+        data: items,
+        itemCount: items.length,
+        indexBarOptions: IndexBarOptions(
+          textStyle: TextStyle(
+            color: Platform.isIOS ? whiteColor : Colors.black54,
+            fontSize: 10,
+          ),
+          indexHintTextStyle: const TextStyle(fontSize: 24, color: whiteColor),
+          indexHintDecoration: BoxDecoration(
+            color: gradient1,
+            shape: BoxShape.circle,
+          ),
+        ),
+        itemBuilder: (context, index) {
+          final p = items[index].name;
+          return _buildLocationTile(
+            title: p,
+            onTap: () {
+              locationController.setUserCity("$p, Tamil Nadu");
+              eventController.loadAllEvents();
+              Get.off(() => Homepage(fromLoc: '$p, Tamilnadu'));
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPredictionList() {
+    return Expanded(
+      child: ListView.builder(
+        itemCount: placePred.length,
+        itemBuilder: (context, index) {
+          final p = placePred[index];
+          final mainText = p.structuredFormatting?.mainText ?? '';
+          final secondaryText =
+              p.structuredFormatting?.secondaryText?.replaceAll(
+                ', India',
+                '',
+              ) ??
+              '';
+          return _buildLocationTile(
+            title: mainText,
+            subtitle: secondaryText,
+            onTap: () {
+              final fullCity =
+                  "$mainText, ${p.structuredFormatting?.secondaryText}";
+              locationController.setUserCity(fullCity);
+              eventController.loadAllEvents();
+              Get.off(
+                () => Homepage(
+                  fromLoc: '$mainText, $secondaryText',
+                  address: fullCity,
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildLocationTile({
+    required String title,
+    String? subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Column(
+      children: [
+        ListTile(
+          onTap: onTap,
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: Platform.isIOS ? Colors.white24 : Colors.black54,
+              ),
+              color:
+                  Platform.isIOS
+                      ? Colors.white.withOpacity(0.05)
+                      : Colors.transparent,
+            ),
+            child: Icon(
+              Icons.location_on_outlined,
+              color: Platform.isIOS ? whiteColor : Colors.black,
+            ),
+          ),
+          title: Text(
+            title,
+            style: TextStyle(
+              fontFamily: 'Medium',
+              fontSize: size.safeWidth * 0.038,
+              color: Platform.isIOS ? whiteColor : Colors.black,
+            ),
+          ),
+          subtitle:
+              subtitle != null
+                  ? Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontFamily: 'Regular',
+                      fontSize: size.safeWidth * 0.032,
+                      color: Platform.isIOS ? Colors.white70 : Colors.black54,
+                    ),
+                  )
+                  : null,
+          trailing: Icon(
+            Icons.arrow_forward_ios,
+            size: 14,
+            color: Platform.isIOS ? Colors.white38 : Colors.grey.shade400,
+          ),
+        ),
+        Divider(
+          height: 1,
+          thickness: 1,
+          indent: size.safeWidth * 0.05,
+          endIndent: size.safeWidth * 0.1,
+          color: Platform.isIOS ? Colors.white10 : const Color(0xFFF5F5F5),
+        ),
+      ],
     );
   }
 }

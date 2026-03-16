@@ -5,7 +5,7 @@ import 'package:ticpin/constants/colors.dart';
 import 'package:ticpin/constants/size.dart';
 
 class NotificationsPage extends StatefulWidget {
-  const NotificationsPage({Key? key}) : super(key: key);
+  const NotificationsPage({super.key});
 
   @override
   State<NotificationsPage> createState() => _NotificationsPageState();

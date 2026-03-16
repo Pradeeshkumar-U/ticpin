@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:ticpin/constants/colors.dart';
+import 'package:ticpin/constants/glass_container.dart';
 import 'package:ticpin/constants/size.dart';
 import 'package:ticpin/constants/temporary.dart';
 import 'package:ticpin/pages/view/artists/artistspage.dart';
@@ -12,6 +13,7 @@ import 'package:ticpin/pages/view/movies/upcomingmovies/upcomingmovies.dart';
 import 'package:ticpin/pages/view/sports/turfpage.dart';
 import 'package:video_player/video_player.dart';
 
+// ignore: must_be_immutable, camel_case_types
 // ignore: must_be_immutable, camel_case_types
 class eventContainer extends StatefulWidget {
   eventContainer({
@@ -207,12 +209,12 @@ class blockbusterContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => Get.to(BlockbusterMovie()),
-      child: Container(
-        margin: EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.black12, width: 1),
-          borderRadius: BorderRadius.circular(17),
-        ),
+      child: TicpinGlassContainer(
+        borderRadius: 17,
+        blur: 10,
+        linearGradientOpacity: 0.05,
+        width: Sizes().width * 0.8,
+        height: Sizes().height * 0.48,
         child: Column(
           children: [
             Expanded(
@@ -303,13 +305,12 @@ class offersContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(right: Sizes().width * 0.055),
-      child: Container(
+      child: TicpinGlassContainer(
         width: Sizes().width * 0.7,
-        // height: Sizes().height * 0.2,
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.black12, width: 1),
-          borderRadius: BorderRadius.circular(17),
-        ),
+        height: Sizes().height * 0.25,
+        borderRadius: 17,
+        blur: 10,
+        linearGradientOpacity: 0.05,
         child: Column(
           children: [
             Expanded(
@@ -393,14 +394,13 @@ class diningContainer extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(right: Sizes().width * 0.045),
       child: GestureDetector(
-        onTap: () => Get.to(Restaurentpage(diningId: '', )),
-        child: Container(
+        onTap: () => Get.to(Restaurentpage(diningId: '')),
+        child: TicpinGlassContainer(
           width: Sizes().width * 0.7,
-          // height: Sizes().height * 0.2,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.black12, width: 1),
-            borderRadius: BorderRadius.circular(17),
-          ),
+          height: Sizes().height * 0.25,
+          borderRadius: 17,
+          blur: 10,
+          linearGradientOpacity: 0.05,
           child: Column(
             children: [
               Expanded(
@@ -483,14 +483,13 @@ class sportsContainer extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(right: Sizes().width * 0.045),
       child: GestureDetector(
-        onTap: () => Get.to(Turfpage(turfId: "",)),
-        child: Container(
+        onTap: () => Get.to(Turfpage(turfId: "")),
+        child: TicpinGlassContainer(
           width: Sizes().width * 0.9,
-          // height: Sizes().height * 0.2,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.black12, width: 1),
-            borderRadius: BorderRadius.circular(17),
-          ),
+          height: Sizes().height * 0.25,
+          borderRadius: 17,
+          blur: 10,
+          linearGradientOpacity: 0.05,
           child: Column(
             children: [
               Expanded(
@@ -536,13 +535,13 @@ class sportsContainer extends StatelessWidget {
                           onPressed: () {},
                           style: ElevatedButton.styleFrom(
                             backgroundColor: blackColor,
-                            shape: RoundedRectangleBorder(
+                            shape: const RoundedRectangleBorder(
                               borderRadius: BorderRadius.all(
                                 Radius.circular(12),
                               ),
                             ),
                           ),
-                          child: Text(
+                          child: const Text(
                             'Book Now',
                             style: TextStyle(
                               color: whiteColor,
@@ -580,12 +579,12 @@ class upcomingContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => Get.to(UpcomingMovie()),
-      child: Container(
-        margin: EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.black12, width: 1),
-          borderRadius: BorderRadius.circular(17),
-        ),
+      child: TicpinGlassContainer(
+        width: Sizes().width * 0.8,
+        height: Sizes().height * 0.48,
+        borderRadius: 17,
+        blur: 10,
+        linearGradientOpacity: 0.05,
         child: Column(
           children: [
             Expanded(
@@ -761,7 +760,7 @@ class SlidingGridViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       height: Sizes().height * 0.6,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,

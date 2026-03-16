@@ -83,8 +83,8 @@ class UserModel {
     DateTime? updatedAt,
   }) {
     return UserModel(
-      userId: this.userId,
-      phoneNumber: this.phoneNumber,
+      userId: userId,
+      phoneNumber: phoneNumber,
       name: name ?? this.name,
       email: email ?? this.email,
       profilePicUrl: profilePicUrl ?? this.profilePicUrl,
@@ -93,7 +93,7 @@ class UserModel {
       diningBookings: diningBookings ?? this.diningBookings,
       diningPayBill : diningPayBill??this.diningPayBill,
       ticList: ticList ?? this.ticList,
-      createdAt: this.createdAt,
+      createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }

@@ -15,7 +15,8 @@ class DiningSummary {
   final int totalReviews;
   final String openTime;
   final String closeTime;
-  
+  final bool isApproved;
+
   double distanceKm = 0.0;
 
   DiningSummary({
@@ -33,12 +34,13 @@ class DiningSummary {
     required this.totalReviews,
     required this.openTime,
     required this.closeTime,
+    required this.isApproved,
     this.distanceKm = 0.0,
   });
 
   factory DiningSummary.fromDoc(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
-    
+
     return DiningSummary(
       id: doc.id,
       name: data['name'] ?? '',
@@ -46,9 +48,10 @@ class DiningSummary {
       contactNumber: data['contactNumber'] ?? '',
       venueLat: _parseDouble(data['location']?['lat']),
       venueLng: _parseDouble(data['location']?['lng']),
-      carouselImage: (data['images']?['carousel'] as List?)?.isNotEmpty == true
-          ? data['images']['carousel'][0]
-          : '',
+      carouselImage:
+          (data['images']?['carousel'] as List?)?.isNotEmpty == true
+              ? data['images']['carousel'][0]
+              : '',
       cuisines: (data['filters']?['cuisines'] as List?)?.cast<String>(),
       categories: (data['filters']?['categories'] as List?)?.cast<String>(),
       facilities: (data['facilities'] as List?)?.cast<String>(),
@@ -56,6 +59,7 @@ class DiningSummary {
       totalReviews: data['reviews']?['total'] ?? 0,
       openTime: data['timings']?['open'] ?? '',
       closeTime: data['timings']?['close'] ?? '',
+      isApproved: data['isApproved'] == true,
     );
   }
 
@@ -75,6 +79,7 @@ class DiningSummary {
       totalReviews: json['totalReviews'] ?? 0,
       openTime: json['openTime'] ?? '',
       closeTime: json['closeTime'] ?? '',
+      isApproved: json['isApproved'] == true,
       distanceKm: _parseDouble(json['distanceKm'], defaultValue: 0.0),
     );
   }
@@ -95,6 +100,7 @@ class DiningSummary {
       'totalReviews': totalReviews,
       'openTime': openTime,
       'closeTime': closeTime,
+      'isApproved': isApproved,
       'distanceKm': distanceKm,
     };
   }

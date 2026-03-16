@@ -911,7 +911,7 @@ class _UpcomingMovieState extends State<UpcomingMovie>
     ];
     final videoId = getYoutubeVideoId(you_tu_url);
    
-    List<Color> col_lis = [
+    List<Color> colLis = [
       Colors.green,
       Colors.red,
       Colors.blue,
@@ -977,8 +977,9 @@ class _UpcomingMovieState extends State<UpcomingMovie>
                                   glowOff() => Future.delayed(
                                     const Duration(milliseconds: 700),
                                     () {
-                                      if (context.mounted)
+                                      if (context.mounted) {
                                         set(() => isGlowing = false);
+                                      }
                                     },
                                   );
 
@@ -1412,13 +1413,13 @@ class _UpcomingMovieState extends State<UpcomingMovie>
                                     });
                                   },
                                 ),
-                                items: List.generate(col_lis.length, (index) {
+                                items: List.generate(colLis.length, (index) {
                                   return Column(
                                     children: [
                                       Container(
                                         height: size.safeWidth * (9 / 16),
                                         width: size.safeWidth * 0.9,
-                                        color: col_lis[index],
+                                        color: colLis[index],
                                         alignment: Alignment.center,
                                         // child: youtubePlayer(wid),
                                       ),
@@ -1434,7 +1435,7 @@ class _UpcomingMovieState extends State<UpcomingMovie>
                               const SizedBox(height: 10),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
-                                children: List.generate(col_lis.length, (
+                                children: List.generate(colLis.length, (
                                   index,
                                 ) {
                                   return Container(
@@ -1478,10 +1479,10 @@ class _UpcomingMovieState extends State<UpcomingMovie>
                             shrinkWrap: true,
                             physics: NeverScrollableScrollPhysics(),
                             padding: EdgeInsets.all(10),
-                            children: List.generate(col_lis.length, (ind) {
+                            children: List.generate(colLis.length, (ind) {
                               return Container(
                                 decoration: BoxDecoration(
-                                  color: col_lis[ind],
+                                  color: colLis[ind],
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 alignment: Alignment.center,

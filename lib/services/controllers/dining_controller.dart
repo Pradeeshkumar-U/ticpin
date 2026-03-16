@@ -68,7 +68,7 @@ class DiningController extends GetxController {
   /// ----------------------------
   Future<void> loadAllDinings({bool forceRefresh = false}) async {
     print('🔄 loadAllDinings called (forceRefresh: $forceRefresh)');
-    
+
     if (!forceRefresh && _isCacheValid()) {
       print('💾 Loading from cache');
       _loadFromCache();
@@ -79,13 +79,14 @@ class DiningController extends GetxController {
 
     loading.value = true;
     print('🌐 Fetching from Firestore...');
-    
+
     try {
-      final snap = await _firestore
-          .collection("dining")
-          .orderBy("created_at", descending: true)
-          .limit(_pageSize)
-          .get();
+      final snap =
+          await _firestore
+              .collection("dining")
+              .orderBy("created_at", descending: true)
+              .limit(_pageSize)
+              .get();
 
       print('📦 Firestore returned ${snap.docs.length} documents');
 
@@ -96,16 +97,20 @@ class DiningController extends GetxController {
         return;
       }
 
-      allSummaries.value = snap.docs.map((doc) {
-        print('  - Processing doc: ${doc.id}');
-        return DiningSummary.fromDoc(doc);
-      }).toList();
-      
+      allSummaries.value =
+          snap.docs
+              .map((doc) {
+                print('  - Processing doc: ${doc.id}');
+                return DiningSummary.fromDoc(doc);
+              })
+              .where((dining) => dining.isApproved)
+              .toList();
+
       _lastDocument = snap.docs.last;
       _hasMore = snap.docs.length == _pageSize;
 
       print('✅ Loaded ${allSummaries.length} dinings from Firestore');
-      
+
       _saveToCache();
       _updateForYouDinings();
       _recalculateNearest();
@@ -124,10 +129,12 @@ class DiningController extends GetxController {
     print('🔍 _updateForYouDinings called');
     print('📊 allSummaries count: ${allSummaries.length}');
     print('📍 User location: lat=${loc.userLat}, lng=${loc.userLng}');
-    
+
     // If no location, just take first 8 dinings without sorting
     if (loc.userLat == null || loc.userLng == null) {
-      print('⚠️ No user location - using first 8 dinings without distance sorting');
+      print(
+        '⚠️ No user location - using first 8 dinings without distance sorting',
+      );
       forYouDinings.value = allSummaries.take(8).toList();
       print('✅ forYouDinings count (no location): ${forYouDinings.length}');
       return;
@@ -149,8 +156,10 @@ class DiningController extends GetxController {
     final sorted = [...allSummaries];
     sorted.sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
     forYouDinings.value = sorted.take(8).toList();
-    
-    print('✅ Updated ${forYouDinings.length} for you dinings (sorted by distance)');
+
+    print(
+      '✅ Updated ${forYouDinings.length} for you dinings (sorted by distance)',
+    );
   }
 
   /// ----------------------------
@@ -164,14 +173,13 @@ class DiningController extends GetxController {
       if (cached != null) {
         try {
           final decoded = json.decode(cached);
-          final Map<String, dynamic> rawMap = Map<String, dynamic>.from(decoded);
-          
-          final converted = _restoreTimestampsFromCache(rawMap);
-          
-          return DiningFull(
-            id: id,
-            raw: converted,
+          final Map<String, dynamic> rawMap = Map<String, dynamic>.from(
+            decoded,
           );
+
+          final converted = _restoreTimestampsFromCache(rawMap);
+
+          return DiningFull(id: id, raw: converted);
         } catch (e) {
           print('⚠️ Cache parse error for $id: $e');
           _storage.remove(cacheKey);
@@ -186,7 +194,7 @@ class DiningController extends GetxController {
 
       final rawData = doc.data()!;
       final processedData = _convertFirestoreTimestamps(rawData);
-      
+
       try {
         final forCache = _convertForCache(processedData);
         _storage.write(cacheKey, json.encode(forCache));
@@ -203,29 +211,35 @@ class DiningController extends GetxController {
 
   Map<String, dynamic> _convertFirestoreTimestamps(Map<String, dynamic> data) {
     final result = <String, dynamic>{};
-    
+
     data.forEach((key, value) {
       if (value is Timestamp) {
         result[key] = value.toDate();
       } else if (value is Map) {
-        result[key] = _convertFirestoreTimestamps(Map<String, dynamic>.from(value));
+        result[key] = _convertFirestoreTimestamps(
+          Map<String, dynamic>.from(value),
+        );
       } else if (value is List) {
-        result[key] = value.map((item) {
-          if (item is Timestamp) return item.toDate();
-          if (item is Map) return _convertFirestoreTimestamps(Map<String, dynamic>.from(item));
-          return item;
-        }).toList();
+        result[key] =
+            value.map((item) {
+              if (item is Timestamp) return item.toDate();
+              if (item is Map)
+                return _convertFirestoreTimestamps(
+                  Map<String, dynamic>.from(item),
+                );
+              return item;
+            }).toList();
       } else {
         result[key] = value;
       }
     });
-    
+
     return result;
   }
 
   Map<String, dynamic> _restoreTimestampsFromCache(Map<String, dynamic> data) {
     final result = <String, dynamic>{};
-    
+
     data.forEach((key, value) {
       if (value is String && _isIso8601(value)) {
         try {
@@ -234,24 +248,30 @@ class DiningController extends GetxController {
           result[key] = value;
         }
       } else if (value is Map) {
-        result[key] = _restoreTimestampsFromCache(Map<String, dynamic>.from(value));
+        result[key] = _restoreTimestampsFromCache(
+          Map<String, dynamic>.from(value),
+        );
       } else if (value is List) {
-        result[key] = value.map((item) {
-          if (item is String && _isIso8601(item)) {
-            try {
-              return DateTime.parse(item);
-            } catch (_) {
+        result[key] =
+            value.map((item) {
+              if (item is String && _isIso8601(item)) {
+                try {
+                  return DateTime.parse(item);
+                } catch (_) {
+                  return item;
+                }
+              }
+              if (item is Map)
+                return _restoreTimestampsFromCache(
+                  Map<String, dynamic>.from(item),
+                );
               return item;
-            }
-          }
-          if (item is Map) return _restoreTimestampsFromCache(Map<String, dynamic>.from(item));
-          return item;
-        }).toList();
+            }).toList();
       } else {
         result[key] = value;
       }
     });
-    
+
     return result;
   }
 
@@ -267,12 +287,13 @@ class DiningController extends GetxController {
 
     loading.value = true;
     try {
-      final snap = await _firestore
-          .collection("dining")
-          .orderBy("created_at", descending: true)
-          .startAfterDocument(_lastDocument!)
-          .limit(_pageSize)
-          .get();
+      final snap =
+          await _firestore
+              .collection("dining")
+              .orderBy("created_at", descending: true)
+              .startAfterDocument(_lastDocument!)
+              .limit(_pageSize)
+              .get();
 
       if (snap.docs.isEmpty) {
         _hasMore = false;
@@ -280,7 +301,11 @@ class DiningController extends GetxController {
         return;
       }
 
-      final newDinings = snap.docs.map((doc) => DiningSummary.fromDoc(doc)).toList();
+      final newDinings =
+          snap.docs
+              .map((doc) => DiningSummary.fromDoc(doc))
+              .where((dining) => dining.isApproved)
+              .toList();
       allSummaries.addAll(newDinings);
       _lastDocument = snap.docs.last;
       _hasMore = snap.docs.length == _pageSize;
@@ -327,10 +352,15 @@ class DiningController extends GetxController {
       if (cached == null) return;
 
       final List<dynamic> decoded = json.decode(cached);
-      allSummaries.value = decoded
-          .map((item) => DiningSummary.fromJson(Map<String, dynamic>.from(item)))
-          .toList();
-      
+      allSummaries.value =
+          decoded
+              .map(
+                (item) =>
+                    DiningSummary.fromJson(Map<String, dynamic>.from(item)),
+              )
+              .where((dining) => dining.isApproved)
+              .toList();
+
       print('✅ Loaded ${allSummaries.length} dinings from cache');
     } catch (e) {
       print('❌ Cache read error: $e');
@@ -341,9 +371,7 @@ class DiningController extends GetxController {
 
   void _saveToCache() {
     try {
-      final encoded = json.encode(
-        allSummaries.map((e) => e.toJson()).toList(),
-      );
+      final encoded = json.encode(allSummaries.map((e) => e.toJson()).toList());
       _storage.write(_cacheKey, encoded);
       _storage.write(_cacheTimeKey, DateTime.now().millisecondsSinceEpoch);
       print('✅ Cache saved with ${allSummaries.length} dinings');
@@ -387,7 +415,8 @@ class DiningController extends GetxController {
     final dLat = _deg2rad(lat2 - lat1);
     final dLon = _deg2rad(lon2 - lon1);
 
-    final a = sin(dLat / 2) * sin(dLat / 2) +
+    final a =
+        sin(dLat / 2) * sin(dLat / 2) +
         cos(_deg2rad(lat1)) *
             cos(_deg2rad(lat2)) *
             sin(dLon / 2) *
@@ -405,14 +434,14 @@ class DiningController extends GetxController {
   void clearCache() {
     _storage.remove(_cacheKey);
     _storage.remove(_cacheTimeKey);
-    
+
     final keys = _storage.getKeys();
     for (var key in keys) {
       if (key.toString().startsWith('dining_full_')) {
         _storage.remove(key);
       }
     }
-    
+
     print('✅ All dining cache cleared');
   }
 
@@ -441,7 +470,7 @@ class DiningController extends GetxController {
   /// ----------------------------
   List<DiningSummary> searchByName(String query) {
     if (query.isEmpty) return allSummaries;
-    
+
     final lowerQuery = query.toLowerCase();
     return allSummaries.where((dining) {
       return dining.name.toLowerCase().contains(lowerQuery);

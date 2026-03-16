@@ -6,16 +6,19 @@ import 'package:ticpin/constants/colors.dart';
 import 'package:ticpin/constants/models/user/userservice.dart';
 import 'package:ticpin/constants/size.dart';
 import 'package:ticpin/pages/view/dining/diningservice.dart';
+import 'package:ticpin/services/payments.dart';
+import 'package:ticpin/services/ticket.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class DiningTableBookingPage extends StatefulWidget {
   final String diningId;
   final Map<String, dynamic> diningData;
 
   const DiningTableBookingPage({
-    Key? key,
+    super.key,
     required this.diningId,
     required this.diningData,
-  }) : super(key: key);
+  });
 
   @override
   State<DiningTableBookingPage> createState() => _DiningTableBookingPageState();
@@ -201,14 +204,29 @@ class _DiningTableBookingPageState extends State<DiningTableBookingPage>
         'phone': _phoneController.text.trim(),
       };
 
-      // Show payment confirmation dialog
-      final confirmed = await _showPaymentDialog(
-        estimatedAmount: estimatedAmount,
-        advanceAmount: advanceAmount,
+      // Launch PaymentPage
+      final paymentResult = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => PaymentPage(
+                amount: advanceAmount.toDouble(),
+                organizerId: widget.diningId,
+                userEmail: _emailController.text.trim(),
+                userPhone: _phoneController.text.trim(),
+                userId: FirebaseAuth.instance.currentUser?.uid ?? 'guest',
+                onPaymentSuccess: (paymentId, orderId) {
+                  Navigator.pop(context, true);
+                },
+                onPaymentError: (error) {
+                  Navigator.pop(context, false);
+                },
+              ),
+        ),
       );
 
-      if (!confirmed) {
-        setState(() => isLoading = false);
+      if (paymentResult != true) {
+        if (mounted) setState(() => isLoading = false);
         return;
       }
 
@@ -226,8 +244,32 @@ class _DiningTableBookingPageState extends State<DiningTableBookingPage>
       );
 
       if (bookingId != null && mounted) {
-        Navigator.pop(context);
-        _showSuccessDialog(bookingId, advanceAmount);
+        Navigator.pop(
+          context,
+        ); // Pop loading or current page? Wait, if it was pushing, popping might pop the restaurant page. Wait, before it had `Navigator.pop(context);`
+        // We will just replace tablebookingpage with TicketCard
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) => TicketCard(
+                  bookingId: bookingId,
+                  eventName:
+                      'Dining: ${widget.diningData['name'] ?? 'Restaurant'}',
+                  date: _getSelectedDate(),
+                  time: selectedStartTime!,
+                  venue: widget.diningData['address'] ?? 'Ticpin',
+                  seats: '$selectedPeople Guests',
+                  posterPath:
+                      (widget.diningData['images'] != null &&
+                              (widget.diningData['images'] as List).isNotEmpty)
+                          ? widget.diningData['images'][0]
+                          : 'https://via.placeholder.com/150',
+                  qrImagePath: bookingId,
+                  logoPath: 'assets/logo.png',
+                ),
+          ),
+        );
       }
     } catch (e) {
       _showErrorSnackbar('Booking failed: ${e.toString()}');
@@ -238,162 +280,9 @@ class _DiningTableBookingPageState extends State<DiningTableBookingPage>
     }
   }
 
-  Future<bool> _showPaymentDialog({
-    required int estimatedAmount,
-    required int advanceAmount,
-  }) async {
-    return await showDialog<bool>(
-          context: context,
-          barrierDismissible: false,
-          builder:
-              (context) => AlertDialog(
-                title: Text(
-                  'Confirm Booking',
-                  style: TextStyle(fontFamily: 'Regular'),
-                ),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Booking Details:',
-                      style: TextStyle(
-                        fontFamily: 'Regular',
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    _buildDetailText('Date', dayTabs[selectedDayIndex][0]),
-                    _buildDetailText('Time', selectedTimeSlot!),
-                    _buildDetailText('People', '$selectedPeople'),
-                    Divider(height: 24),
-                    _buildDetailText('Estimated Amount', '₹$estimatedAmount'),
-                    _buildDetailText(
-                      'Advance Payment (10%)',
-                      '₹$advanceAmount',
-                      isBold: true,
-                    ),
-                    SizedBox(height: 12),
-                    Text(
-                      'Note: You will pay the remaining amount at the restaurant.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                        fontFamily: 'Regular',
-                      ),
-                    ),
-                  ],
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: Text(
-                      'Cancel',
-                      style: TextStyle(fontFamily: 'Regular'),
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                    ),
-                    child: Text(
-                      'Pay ₹$advanceAmount',
-                      style: TextStyle(
-                        fontFamily: 'Regular',
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-        ) ??
-        false;
-  }
-
-  void _showSuccessDialog(String bookingId, int advanceAmount) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (context) => AlertDialog(
-            title: Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.green, size: 32),
-                SizedBox(width: 12),
-                Text(
-                  'Booking Confirmed!',
-                  style: TextStyle(fontFamily: 'Regular'),
-                ),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Your table has been booked successfully.',
-                  style: TextStyle(fontFamily: 'Regular'),
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'Booking ID: ${bookingId.substring(0, 8)}...',
-                  style: TextStyle(
-                    fontFamily: 'Regular',
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Advance Paid: ₹$advanceAmount',
-                  style: TextStyle(
-                    fontFamily: 'Regular',
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green.shade700,
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: blackColor),
-                child: Text(
-                  'Done',
-                  style: TextStyle(fontFamily: 'Regular', color: whiteColor),
-                ),
-              ),
-            ],
-          ),
-    );
-  }
-
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.red),
-    );
-  }
-
-  Widget _buildDetailText(String label, String value, {bool isBold = false}) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(fontFamily: 'Regular', fontSize: 14)),
-          Text(
-            value,
-            style: TextStyle(
-              fontFamily: 'Regular',
-              fontSize: 14,
-              fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -808,7 +697,7 @@ class _DiningTableBookingPageState extends State<DiningTableBookingPage>
                                         SizedBox(height: 16),
                                       ],
                                     );
-                                  }).toList(),
+                                  }),
 
                                 SizedBox(height: 24),
 

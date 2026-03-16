@@ -667,8 +667,9 @@ class _ArtistpageState extends State<Artistpage> with TickerProviderStateMixin {
                                             glowOff() => Future.delayed(
                                               const Duration(milliseconds: 700),
                                               () {
-                                                if (context.mounted)
+                                                if (context.mounted) {
                                                   set(() => isGlowing2 = false);
+                                                }
                                               },
                                             );
 

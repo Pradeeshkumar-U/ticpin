@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:ticpin/main.dart';
 import 'package:ticpin/pages/login/loginpage.dart';
 import 'package:ticpin/pages/profile/sub%20pages/supportpage.dart';
 

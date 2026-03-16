@@ -279,10 +279,11 @@ class _TheatrepageState extends State<Theatrepage>
                                                     milliseconds: 700,
                                                   ),
                                                   () {
-                                                    if (context.mounted)
+                                                    if (context.mounted) {
                                                       set(
                                                         () => isGlowing = false,
                                                       );
+                                                    }
                                                   },
                                                 );
 
@@ -494,7 +495,7 @@ class _TheatrepageState extends State<Theatrepage>
             SafeArea(
               child: Align(
                 alignment: Alignment.topCenter,
-                child: Container(
+                child: SizedBox(
                   height: kToolbarHeight,
                   width: double.infinity,
                   child: Row(

@@ -11,11 +11,29 @@ class Places {
   Future<String?> fetchUrl(Uri uri, {Map<String, String>? headers}) async {
     try {
       final response = await http.get(uri, headers: headers);
-      return response.body;
+      if (response.statusCode == 200) {
+        return response.body;
+      }
     } catch (e) {
       debugPrint(e.toString());
     }
     return null;
+  }
+
+  Future<PlaceAutoCompleteResponse> getAutocomplete(String query) async {
+    // You should replace 'YOUR_API_KEY' with your actual Google Places API key
+    const String apiKey = 'YOUR_API_KEY';
+    final Uri uri = Uri.https(
+      'maps.googleapis.com',
+      '/maps/api/place/autocomplete/json',
+      {'input': query, 'key': apiKey},
+    );
+
+    final String? response = await fetchUrl(uri);
+    if (response != null) {
+      return PlaceAutoCompleteResponse.parseAutoCompleteResult(response);
+    }
+    return PlaceAutoCompleteResponse(status: 'ERROR', pred: []);
   }
 }
 
@@ -90,7 +108,7 @@ Future<void> openMapLink(String url) async {
       mode: LaunchMode.externalApplication, // Opens in Google Maps / App
     );
   } else {
-    print(  'Could not launch $url');
+    print('Could not launch $url');
   }
 }
 

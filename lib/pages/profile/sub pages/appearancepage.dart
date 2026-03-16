@@ -4,7 +4,7 @@ import 'package:ticpin/constants/colors.dart';
 import 'package:ticpin/constants/size.dart';
 
 class AppearancePage extends StatefulWidget {
-  const AppearancePage({Key? key}) : super(key: key);
+  const AppearancePage({super.key});
 
   @override
   State<AppearancePage> createState() => _AppearancePageState();
@@ -204,7 +204,7 @@ class _AppearancePageState extends State<AppearancePage> {
                 Switch(
                   value: _enableAnimations,
                   onChanged: _toggleAnimations,
-                  activeColor: blackColor,
+                  activeThumbColor: blackColor,
                 ),
               ],
             ),

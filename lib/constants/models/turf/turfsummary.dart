@@ -57,12 +57,7 @@
 //   }
 // }
 
-
-
-
-
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 
 int parseInt(double value) {
   return value.toInt();
@@ -82,6 +77,7 @@ class TurfSummary {
   final List<String> posterUrls;
   final List<String> amenities;
   final List<String> playground;
+  final bool isApproved;
 
   double distanceKm = 0.0;
 
@@ -99,6 +95,7 @@ class TurfSummary {
     required this.posterUrls,
     required this.amenities,
     required this.playground,
+    required this.isApproved,
   });
 
   factory TurfSummary.fromDoc(DocumentSnapshot doc) {
@@ -115,9 +112,15 @@ class TurfSummary {
       venueLng: double.tryParse(data["venue_lng"]?.toString() ?? "") ?? 0.0,
       mapLink: data["map_link"] ?? "",
       halfHourPrice: parseInt(data["half_hour_price"] ?? 0),
-      posterUrls: (data["poster_urls"] as List?)?.map((e) => e.toString()).toList() ?? [],
-      amenities: (data["amenities"] as List?)?.map((e) => e.toString()).toList() ?? [],
-      playground: (data["playground"] as List?)?.map((e) => e.toString()).toList() ?? [],
+      posterUrls:
+          (data["poster_urls"] as List?)?.map((e) => e.toString()).toList() ??
+          [],
+      amenities:
+          (data["amenities"] as List?)?.map((e) => e.toString()).toList() ?? [],
+      playground:
+          (data["playground"] as List?)?.map((e) => e.toString()).toList() ??
+          [],
+      isApproved: data["isApproved"] == true,
     );
   }
 
@@ -135,6 +138,7 @@ class TurfSummary {
     'posterUrls': posterUrls,
     'amenities': amenities,
     'playground': playground,
+    'isApproved': isApproved,
     'distanceKm': distanceKm,
   };
 
@@ -150,9 +154,15 @@ class TurfSummary {
       venueLng: json['venueLng'] ?? 0.0,
       mapLink: json['mapLink'] ?? '',
       halfHourPrice: json['halfHourPrice'] ?? 0,
-      posterUrls: (json['posterUrls'] as List?)?.map((e) => e.toString()).toList() ?? [],
-      amenities: (json['amenities'] as List?)?.map((e) => e.toString()).toList() ?? [],
-      playground: (json['playground'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      posterUrls:
+          (json['posterUrls'] as List?)?.map((e) => e.toString()).toList() ??
+          [],
+      amenities:
+          (json['amenities'] as List?)?.map((e) => e.toString()).toList() ?? [],
+      playground:
+          (json['playground'] as List?)?.map((e) => e.toString()).toList() ??
+          [],
+      isApproved: json['isApproved'] == true,
     )..distanceKm = json['distanceKm'] ?? 0.0;
   }
 }

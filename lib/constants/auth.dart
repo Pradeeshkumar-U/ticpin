@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:ticpin/main.dart';
 import 'package:ticpin/pages/home/homepage.dart';
 import 'package:ticpin/pages/login/loginpage.dart';
 

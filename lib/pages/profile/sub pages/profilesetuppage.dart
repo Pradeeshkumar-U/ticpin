@@ -12,7 +12,7 @@ class ProfileSetupPage extends StatefulWidget {
   final bool
   isRequired; // If true, user must complete profile before proceeding
 
-  const ProfileSetupPage({Key? key, this.isRequired = false}) : super(key: key);
+  const ProfileSetupPage({super.key, this.isRequired = false});
 
   @override
   State<ProfileSetupPage> createState() => _ProfileSetupPageState();

@@ -1404,8 +1404,9 @@ class EventController extends GetxController {
       <VideoPlayerController?>[].obs;
 
   void initializeController(int index, String url) {
-    if (videoControllers.length <= index || videoControllers[index] != null)
+    if (videoControllers.length <= index || videoControllers[index] != null) {
       return;
+    }
 
     final controller = VideoPlayerController.network(url)
       ..initialize().then((_) {
@@ -1489,7 +1490,10 @@ class EventController extends GetxController {
 
       // Load all events and filter to future only
       final allEvents =
-          snap.docs.map((doc) => EventSummary.fromDoc(doc)).toList();
+          snap.docs
+              .map((doc) => EventSummary.fromDoc(doc))
+              .where((event) => event.isApproved)
+              .toList();
       allSummaries.value = allEvents.where(_isFutureEvent).toList();
 
       _lastDocument = snap.docs.last;
@@ -1570,45 +1574,45 @@ class EventController extends GetxController {
   //     return null;
   //   }
   // }
-Future<EventFull?> loadEventFull(String id) async {
-  try {
-    final cacheKey = 'event_full_$id';
-    final cached = _storage.read<String>(cacheKey);
+  Future<EventFull?> loadEventFull(String id) async {
+    try {
+      final cacheKey = 'event_full_$id';
+      final cached = _storage.read<String>(cacheKey);
 
-    EventFull event;
+      EventFull event;
 
-    if (cached != null) {
-      final decoded = json.decode(cached);
-      final converted = _restoreTimestampsFromCache(
-        Map<String, dynamic>.from(decoded),
-      );
-      event = EventFull(id: id, raw: converted);
-    } else {
-      final doc = await _firestore.collection("events").doc(id).get();
-      if (!doc.exists || doc.data() == null) return null;
+      if (cached != null) {
+        final decoded = json.decode(cached);
+        final converted = _restoreTimestampsFromCache(
+          Map<String, dynamic>.from(decoded),
+        );
+        event = EventFull(id: id, raw: converted);
+      } else {
+        final doc = await _firestore.collection("events").doc(id).get();
+        if (!doc.exists || doc.data() == null) return null;
 
-      final processedData = _convertFirestoreTimestamps(doc.data()!);
-      event = EventFull(id: id, raw: processedData);
+        final processedData = _convertFirestoreTimestamps(doc.data()!);
+        event = EventFull(id: id, raw: processedData);
 
-      _storage.write(cacheKey, json.encode(_convertForCache(processedData)));
+        _storage.write(cacheKey, json.encode(_convertForCache(processedData)));
+      }
+
+      // 🔥 CALCULATE DISTANCE (same logic as summary)
+      if (loc.userLat != null && loc.userLng != null) {
+        event.distanceKm = _calculateDistance(
+          loc.userLat!,
+          loc.userLng!,
+          event.venueLat,
+          event.venueLng,
+        );
+      }
+
+      return event;
+    } catch (e) {
+      print("❌ Load event full error: $e");
+      return null;
     }
-
-    // 🔥 CALCULATE DISTANCE (same logic as summary)
-    if (loc.userLat != null && loc.userLng != null) {
-      event.distanceKm = _calculateDistance(
-        loc.userLat!,
-        loc.userLng!,
-        event.venueLat,
-        event.venueLng,
-      );
-    }
-
-    return event;
-  } catch (e) {
-    print("❌ Load event full error: $e");
-    return null;
   }
-}
 
   Map<String, dynamic> _convertFirestoreTimestamps(Map<String, dynamic> data) {
     final result = <String, dynamic>{};
@@ -1624,10 +1628,11 @@ Future<EventFull?> loadEventFull(String id) async {
         result[key] =
             value.map((item) {
               if (item is Timestamp) return item.toDate();
-              if (item is Map)
+              if (item is Map) {
                 return _convertFirestoreTimestamps(
                   Map<String, dynamic>.from(item),
                 );
+              }
               return item;
             }).toList();
       } else {
@@ -1662,10 +1667,11 @@ Future<EventFull?> loadEventFull(String id) async {
                   return item;
                 }
               }
-              if (item is Map)
+              if (item is Map) {
                 return _restoreTimestampsFromCache(
                   Map<String, dynamic>.from(item),
                 );
+              }
               return item;
             }).toList();
       } else {
@@ -1724,44 +1730,52 @@ Future<EventFull?> loadEventFull(String id) async {
   //   }
   // }
 
-Future<void> loadMoreEvents() async {
-  if (!_hasMore || loading.value || _lastDocument == null) return;
+  Future<void> loadMoreEvents() async {
+    if (!_hasMore || loading.value || _lastDocument == null) return;
 
-  loading.value = true;
-  try {
-    final snap = await _firestore
-        .collection("events")
-        .orderBy("createdAt", descending: true)
-        .startAfterDocument(_lastDocument!)
-        .limit(_pageSize)
-        .get();
+    loading.value = true;
+    try {
+      final snap =
+          await _firestore
+              .collection("events")
+              .orderBy("createdAt", descending: true)
+              .startAfterDocument(_lastDocument!)
+              .limit(_pageSize)
+              .get();
 
-    if (snap.docs.isEmpty) {
-      _hasMore = false;
+      if (snap.docs.isEmpty) {
+        _hasMore = false;
+        loading.value = false;
+        return;
+      }
+
+      // Load new events and filter to future only
+      final allNewEvents =
+          snap.docs
+              .map((doc) => EventSummary.fromDoc(doc))
+              .where((event) => event.isApproved)
+              .toList();
+      final futureNewEvents = allNewEvents.where(_isFutureEvent).toList();
+
+      // Use addAll to append without replacing the entire list
+      allSummaries.addAll(futureNewEvents);
+
+      _lastDocument = snap.docs.last;
+      _hasMore = snap.docs.length == _pageSize;
+
+      _saveToCache();
+      _updateForYouEvents();
+      _recalculateNearest();
+      print(
+        '✅ Loaded ${futureNewEvents.length} more future events (${allNewEvents.length - futureNewEvents.length} past events filtered)',
+      );
+    } catch (e) {
+      print('❌ Load more error: $e');
+    } finally {
       loading.value = false;
-      return;
     }
-
-    // Load new events and filter to future only
-    final allNewEvents = snap.docs.map((doc) => EventSummary.fromDoc(doc)).toList();
-    final futureNewEvents = allNewEvents.where(_isFutureEvent).toList();
-    
-    // Use addAll to append without replacing the entire list
-    allSummaries.addAll(futureNewEvents);
-    
-    _lastDocument = snap.docs.last;
-    _hasMore = snap.docs.length == _pageSize;
-
-    _saveToCache();
-    _updateForYouEvents();
-    _recalculateNearest();
-    print('✅ Loaded ${futureNewEvents.length} more future events (${allNewEvents.length - futureNewEvents.length} past events filtered)');
-  } catch (e) {
-    print('❌ Load more error: $e');
-  } finally {
-    loading.value = false;
   }
-}
+
   /// ----------------------------
   /// REFRESH EVENTS (Future events only)
   /// ----------------------------
@@ -1799,6 +1813,7 @@ Future<void> loadMoreEvents() async {
                 (item) =>
                     EventSummary.fromJson(Map<String, dynamic>.from(item)),
               )
+              .where((event) => event.isApproved)
               .toList();
 
       // Filter to future events only when loading from cache

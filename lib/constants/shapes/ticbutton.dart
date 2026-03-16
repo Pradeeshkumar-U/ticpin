@@ -94,13 +94,13 @@ class TicListButton extends StatefulWidget {
   final bool isBackground;
 
   const TicListButton({
-    Key? key,
+    super.key,
     required this.itemId,
     required this.itemType,
     required this.isBackground,
     this.color,
     this.onToggle,
-  }) : super(key: key);
+  });
 
   @override
   State<TicListButton> createState() => _TicListButtonState();

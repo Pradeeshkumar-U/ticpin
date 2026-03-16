@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ticpin/constants/colors.dart';
 import 'package:ticpin/constants/services.dart';
-import 'package:ticpin/constants/shapes/ticbutton.dart';
 import 'package:ticpin/constants/size.dart';
 
 class CategoryPage extends StatefulWidget {

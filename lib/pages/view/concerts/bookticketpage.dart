@@ -760,10 +760,10 @@ class UserBookingPage extends StatefulWidget {
   final Map<String, dynamic> eventData;
 
   const UserBookingPage({
-    Key? key,
+    super.key,
     required this.eventId,
     required this.eventData,
-  }) : super(key: key);
+  });
 
   @override
   State<UserBookingPage> createState() => _UserBookingPageState();

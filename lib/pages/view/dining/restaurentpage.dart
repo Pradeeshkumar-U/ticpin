@@ -1284,7 +1284,6 @@ import 'package:ticpin/constants/models/user/user.dart';
 import 'package:ticpin/constants/shapes/ticbutton.dart';
 import 'package:ticpin/constants/shimmer.dart';
 import 'package:ticpin/constants/size.dart';
-import 'package:ticpin/constants/temporary.dart';
 import 'package:ticpin/pages/view/dining/billpaypage.dart';
 import 'package:ticpin/pages/view/dining/diningservice.dart';
 import 'package:ticpin/pages/view/dining/tablebookingpage.dart';
@@ -1305,8 +1304,8 @@ class _RestaurentpageState extends State<Restaurentpage>
     with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   final DiningController diningController = Get.find<DiningController>();
-  CarouselSliderController _diningController = CarouselSliderController();
-  int _diningCurrent = 0;
+  final CarouselSliderController _diningController = CarouselSliderController();
+  final int _diningCurrent = 0;
   double _appBarOpacity = 0.0;
 
   DiningFull? diningData;
@@ -1624,7 +1623,7 @@ class _RestaurentpageState extends State<Restaurentpage>
                     ],
                   ),
                 ),
-                Container(
+                SizedBox(
                   width: size.safeWidth,
                   height: size.safeHeight * 0.3,
                   child: GridView.builder(

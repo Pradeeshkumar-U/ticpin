@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:buttons_tabbar/buttons_tabbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,7 +18,7 @@ import 'package:ticpin/pages/home/sub%20pages/youpage.dart';
 import 'package:ticpin/pages/profile/sub%20pages/ticlistpage.dart';
 import 'package:ticpin/services/controllers/event_controller.dart';
 import 'package:ticpin/services/controllers/location_controller.dart';
-import 'package:ticpin/services/qrcode.dart';
+import 'package:ticpin/constants/glass_container.dart';
 
 // ignore: must_be_immutable
 class Homepage extends StatefulWidget {
@@ -234,34 +232,30 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
             //     // ),
             //   ),
             // ),
-            Container(
-              width: double.infinity,
-              height: kToolbarHeight + size.safeWidth * 0.13,
-
-              // height:
-              //     _fadeValue() < 0.4
-              //         ? size.safeHeight * 0.13 * (1 - _fadeValue())
-              //         : size.safeHeight * 0.07,
-              decoration: BoxDecoration(
-                // color: Colors.white.withAlpha(
-                //   50,
-                // ),
-                // color: gradient1,
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [gradient1, gradient2],
-                ), // semi-transparent glass color
-                // borderRadius: BorderRadius.circular(20),
-                // border: Border.all(
-                //   // color: Colors.white.withOpacity(0.3),
-                //   width: 1.5,
-                // ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: TicpinGlassContainer(
+                width: size.safeWidth,
+                height: kToolbarHeight + size.safeWidth * 0.15,
+                borderRadius: 0,
+                blur: 20,
+                linearGradientOpacity: 0.05,
+                borderGradientOpacity: 0.1,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        gradient1.withOpacity(0.6),
+                        gradient2.withOpacity(0.6),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-              // color: whiteColor,
-              // decoration: BoxDecoration(
-              //
-              // ),
             ),
             Padding(
               padding: EdgeInsets.only(top: size.safeWidth * 0.08),

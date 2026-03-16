@@ -55,7 +55,6 @@
 //   }
 // }
 
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 // ============================================
@@ -81,6 +80,7 @@ class EventSummary {
   final String venueName;
   final DateTime dateTime;
   final DateTime? endDateTime;
+  final bool isApproved;
 
   double distanceKm = 0.0;
 
@@ -94,17 +94,18 @@ class EventSummary {
     required this.venueName,
     required this.dateTime,
     this.endDateTime,
+    required this.isApproved,
   });
 
   factory EventSummary.fromDoc(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     final venue = data["venue"] ?? {};
     final media = data["media"] ?? {};
-    
+
     // Get the first day's date
     DateTime firstDate = DateTime.now();
     DateTime? lastDate;
-    
+
     final days = data["days"] as List?;
     if (days != null && days.isNotEmpty) {
       final firstDay = days.first as Map<String, dynamic>;
@@ -112,7 +113,7 @@ class EventSummary {
       if (dayData != null && dayData["date"] is Timestamp) {
         firstDate = (dayData["date"] as Timestamp).toDate();
       }
-      
+
       if (days.length > 1) {
         final lastDay = days.last as Map<String, dynamic>;
         final lastDayKey = "day${days.length}";
@@ -126,13 +127,15 @@ class EventSummary {
     return EventSummary(
       id: doc.id,
       name: data["name"] ?? "",
-      posterUrl: media["posterLink"] ?? "", // Firebase Storage URL - no conversion
+      posterUrl:
+          media["posterLink"] ?? "", // Firebase Storage URL - no conversion
       videoUrl: driveToDirect(media["videoLink"] ?? ""), // Drive link - convert
       venueLat: double.tryParse(venue["venueLat"]?.toString() ?? "") ?? 0.0,
       venueLng: double.tryParse(venue["venueLng"]?.toString() ?? "") ?? 0.0,
       venueName: venue["name"] ?? "",
       dateTime: firstDate,
       endDateTime: lastDate,
+      isApproved: data["isApproved"] == true,
     );
   }
 
@@ -146,6 +149,7 @@ class EventSummary {
     'venueName': venueName,
     'dateTime': dateTime.millisecondsSinceEpoch,
     'endDateTime': endDateTime?.millisecondsSinceEpoch,
+    'isApproved': isApproved,
     'distanceKm': distanceKm,
   };
 
@@ -159,9 +163,11 @@ class EventSummary {
       venueLng: json['venueLng'] ?? 0.0,
       venueName: json['venueName'] ?? '',
       dateTime: DateTime.fromMillisecondsSinceEpoch(json['dateTime'] ?? 0),
-      endDateTime: json['endDateTime'] != null 
-          ? DateTime.fromMillisecondsSinceEpoch(json['endDateTime']) 
-          : null,
+      endDateTime:
+          json['endDateTime'] != null
+              ? DateTime.fromMillisecondsSinceEpoch(json['endDateTime'])
+              : null,
+      isApproved: json['isApproved'] == true,
     )..distanceKm = json['distanceKm'] ?? 0.0;
   }
 }

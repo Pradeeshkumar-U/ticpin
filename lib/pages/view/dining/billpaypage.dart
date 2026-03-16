@@ -252,10 +252,10 @@ class DiningBillPaymentPage extends StatefulWidget {
   final Map<String, dynamic> diningData;
 
   const DiningBillPaymentPage({
-    Key? key,
+    super.key,
     required this.diningId,
     required this.diningData,
-  }) : super(key: key);
+  });
 
   @override
   State<DiningBillPaymentPage> createState() => _DiningBillPaymentPageState();
@@ -846,7 +846,7 @@ class _DiningBillPaymentPageState extends State<DiningBillPaymentPage> {
                               ),
                             ),
                           );
-                        }).toList(),
+                        }),
 
                         // Price Summary
                         if (billAmount > 0) ...[

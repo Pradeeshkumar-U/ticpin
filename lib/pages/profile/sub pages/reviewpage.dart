@@ -5,7 +5,7 @@ import 'package:ticpin/constants/colors.dart';
 import 'package:ticpin/constants/size.dart';
 
 class ReviewsPage extends StatefulWidget {
-  const ReviewsPage({Key? key}) : super(key: key);
+  const ReviewsPage({super.key});
 
   @override
   State<ReviewsPage> createState() => _ReviewsPageState();
